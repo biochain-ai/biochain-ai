@@ -1,15 +1,15 @@
 fabric:
   cas:
-  - "ca1.org0.example.com"
-  - "ca1.org1.example.com"
-  - "ca1.org2.example.com"
+  - "ca1.parma.com"
+  - "ca1.brescia.com"
+  - "ca1.mantova.com"
   peers:
-  - "tizio.org0.example.com"
-  - "caio.org0.example.com"
-  - "pippo.org1.example.com"
-  - "pluto.org1.example.com"
-  - "renzo.org2.example.com"
-  - "lucia.org2.example.com"
+  - "tizio.parma.com"
+  - "caio.parma.com"
+  - "pippo.brescia.com"
+  - "pluto.brescia.com"
+  - "renzo.mantova.com"
+  - "lucia.mantova.com"
   orderers:
   - "orderer1.example.com"
   - "orderer2.example.com"
