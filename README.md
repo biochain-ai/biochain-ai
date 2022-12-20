@@ -1,2 +1,5 @@
-# biochain-ai
-This repository will contain all the files about the blockchain project
+# Biochain-AI
+Simple implementation of a blockchain network using Hyperledger Fabric
+
+### Start the network
+
