@@ -1,12 +1,11 @@
 /*
-First test of smartcontract
-
 This smartcontract will allow users to:
  - insert data into their private database
  - make requests to obtain data of other users
  - accept or deny requests from other users to share data
  - inform everyone of the data available for sharing
 
+  More to be added
 */
 
 package main
@@ -24,17 +23,18 @@ import (
 type Chaincode struct {
 }
 
-// Asset used to track ownership of the data, publicly
-type dataProperty struct {
-	Id    string
-	Owner string
+// Asset used to track define data, publicly
+type data struct {
+	Id          string
+	Owner       string
+	Description string
 }
 
 // Asset used to describe the data
-type dataDescription struct {
-	Id          string
-	Description string
-}
+// type dataDescription struct {
+// 	Id          string
+// 	Description string
+// }
 
 // Asset used in the private databases to store the actual data
 type dataBioPrivateDetails struct {
@@ -64,7 +64,6 @@ type assetRequest struct {
 // Initializes chaincode
 // =====================
 func (c *Chaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("Init running.")
 	return shim.Success(nil)
 }
 
@@ -99,10 +98,14 @@ func (c *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
 // insertData
 // ==========
+// Gives a set of transient data, this methods insert in the ledger the pair
+// <name> - <name,descritpion,owner> and in the private collection the pair
+// <name> - <data>
 func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("- start insertData")
+
 	type dataTransientInput struct {
 		Name        string
-		Owner       string
 		Description string
 		Data        string
 	}
@@ -143,9 +146,6 @@ func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) 
 	if len(dataInput.Description) == 0 {
 		return shim.Error("'Description' field must be a non-empty string.")
 	}
-	if len(dataInput.Owner) == 0 {
-		return shim.Error("'Owner' field must be a non-empty string.")
-	}
 
 	// Check if data already exists
 	dataLedgerBytes, err := stub.GetState(dataInput.Name)
@@ -156,39 +156,30 @@ func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("This data already exists: " + dataInput.Name)
 	}
 
+	var creator string
+	creatorBytes, _ := stub.GetCreator()
+	creator = string(creatorBytes[:])
+
 	// Create data to be inserted into the ledger
-	dataDesc := &dataDescription{
+	dataToInsert := &data{
 		Id:          dataInput.Name,
 		Description: dataInput.Description,
+		Owner:       creator,
 	}
 
-	dataProp := &dataProperty{
-		Id:    dataInput.Name,
-		Owner: dataInput.Owner,
-	}
-
-	dataDescJSON, err := json.Marshal(dataDesc)
-	if err != nil {
-		return shim.Error("Error creating data:" + err.Error())
-	}
-
-	dataPropJSON, err := json.Marshal(dataProp)
+	// Marshal the data
+	dataToInsertJSON, err := json.Marshal(dataToInsert)
 	if err != nil {
 		return shim.Error("Error creating data:" + err.Error())
 	}
 
 	// Save data into the ledger
-	err = stub.PutState(dataInput.Name, dataDescJSON)
+	err = stub.PutState(dataInput.Name, dataToInsertJSON)
 	if err != nil {
 		return shim.Error("Error during put state: " + err.Error())
 	}
 
-	err = stub.PutState(dataInput.Name, dataPropJSON)
-	if err != nil {
-		return shim.Error("Error during put state: " + err.Error())
-	}
-
-	// Create data to be insterted into the private data
+	// Create data to be inserted into the private data
 	dataBio := &dataBioPrivateDetails{
 		Id:   dataInput.Name,
 		Data: dataInput.Data,
@@ -210,31 +201,117 @@ func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) 
 
 // removeData
 // ==========
-func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) pb.Response
+// Given a data name, using transient data, this method deletes the
+// corresponding data from the ledger and from the private collection.
+func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("- Start removeData")
+
+	type removeDataTransientInput struct {
+		Name string
+	}
+
+	// No parameter shall be passed outside the transient map
+	if len(args) != 0 {
+		return shim.Error("Incorrect number of parameters. Data must be passed in transient map.")
+	}
+
+	// Retrieve the transient data
+	transMap, err := stub.GetTransient()
+	if err != nil {
+		return shim.Error("Error getting transient: " + err.Error())
+	}
+
+	// Get the 'data' field
+	dataJSONBytes, ok := transMap["data"]
+	if !ok {
+		return shim.Error("'data' must be a key in the transient map.")
+	}
+
+	if len(dataJSONBytes) == 0 {
+		return shim.Error("'data' value in the transient map must be a non-empty JSON string.")
+	}
+
+	// Unmarshal Json data
+	var removeDataInput removeDataTransientInput
+	err = json.Unmarshal(dataJSONBytes, &removeDataInput)
+	if err != nil {
+		return shim.Error("Failed to decode JSON of: " + string(dataJSONBytes))
+	}
+
+	if len(removeDataInput.Name) != 0 {
+		return shim.Error("'Name' fiels must be a non-empty string.")
+	}
+
+	// Check if data already exists
+	dataBytes, err := stub.GetState(removeDataInput.Name)
+	if err != nil {
+		return shim.Error("Failed to get data from the ledger: " + err.Error())
+	} else if dataBytes != nil {
+		fmt.Println("This data does not exists: " + removeDataInput.Name)
+		return shim.Error("This data cannot be removed, it does not exist")
+	}
+
+	// Check if the one how asked for deletion is the owner
+	var data data
+	err = json.Unmarshal(dataBytes, &data)
+	if err != nil {
+		return shim.Error("Error during data unmarshal")
+	}
+
+	var creator string
+	creatorBytes, _ := stub.GetCreator()
+	creator = string(creatorBytes[:])
+
+	if data.Owner != creator {
+		return shim.Error("Deletion not allowed. Only the creator can delete its data.")
+	}
+
+	// Delete public state
+	err = stub.DelState(removeDataInput.Name)
+	if err != nil {
+		return shim.Error("Error removing the key from the ledger " + err.Error())
+	}
+
+	fmt.Println("end removeData")
+	return shim.Success(nil)
+}
 
 // viewAllData
 // ========
-func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string) pb.Response
+func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	return shim.Success(nil)
+}
 
 // viewPersonalData
 // ========
-func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []string) pb.Response
+func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	return shim.Success(nil)
+}
 
 // requestData
 // ===========
-func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string) pb.Response
+func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	return shim.Success(nil)
+}
 
 // viewSharingRequests
 // ===================
-func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response
+func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	return shim.Success(nil)
+}
 
 // acceptRequest
 // =============
-func (c *Chaincode) acceptRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response
+func (c *Chaincode) acceptRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	return shim.Success(nil)
+}
 
 // denyRequest
 // ===========
-func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response
+func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	return shim.Success(nil)
+}
 
 // Main
 // ====
