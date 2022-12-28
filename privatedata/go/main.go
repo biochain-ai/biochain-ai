@@ -238,7 +238,7 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("Failed to decode JSON of: " + string(dataJSONBytes))
 	}
 
-	if len(removeDataInput.Name) != 0 {
+	if len(removeDataInput.Name) == 0 {
 		return shim.Error("'Name' fiels must be a non-empty string.")
 	}
 
