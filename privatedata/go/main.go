@@ -246,7 +246,7 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 	dataBytes, err := stub.GetState(removeDataInput.Name)
 	if err != nil {
 		return shim.Error("Failed to get data from the ledger: " + err.Error())
-	} else if dataBytes != nil {
+	} else if dataBytes == nil {
 		fmt.Println("This data does not exists: " + removeDataInput.Name)
 		return shim.Error("This data cannot be removed, it does not exist")
 	}
