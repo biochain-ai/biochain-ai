@@ -59,3 +59,37 @@ comunque eseguire una rete blockchain standard omettendo quel file)
     (Questo permette di eliminare tutti i file creati dall'esecuzione che vengono salvati all'interno di una cartella chiamata `vars` creata e gestita dallo script)
 
 E' possibile verificare in ogni momento, tramite il comando `docker ps` l'esecuzione dei container della rete
+
+## Installare chaincode custom
+
+Per installare chaincode custom che utilizza i transient data è necessario eseguire le seguenti operazioni:
+
+- Eseguire la rete blockchain come descritto sopra
+- Copiare il codice dello smart contract dentro la cartella `vars/chaincode/` che viene creata dopo l'inizializzazrione della rete
+- Installare lo smart contract con il seguente comando
+
+	`minifab install -n <nomeSmartContract> -r true`
+
+- Modificare il file `<nomeSmartContract>_collection_config.json` con i nomi corretti per le collezioni dei dati privati
+- Eseguire
+
+	`minifab approve,commit,initialize .p '' `
+
+Al termine di queste operazioni lo smart contract sarà pronto per essere eseguito
+
+## Eseguire i metodi dello smart contract
+
+Per eseguire i metodi sullo smart contract è necessario utilizzare `minifab invoke` specificando il nome del metodo che si vuole invocare, i parametri, gli eventuali transient data ed eventualmente l'organizzazione che sta eseguendo il metodo
+
+Il seguente comando permette di create una variabile, che verrà poi passata al comando di invocazione, contentente i dati nel formato corretto per i dati transienti
+
+	` DATA=$( echo '{"name":"PrimoDato","description":"descrizione del primo dato","data":"qwertyuioplkjhgfdsazxcvbnm"}' | base64 | tr -d \\n )`
+
+Verrebbe poi sfruttata all'interno del comando nel seguente modo
+
+	 ` minifab invoke -p '"insertData"' -t '{"data":"'$DATA'"}' -o parma.com`
+
+Dove 'insertData' è il nome del metodo che vogliamo invocare, '-t' permette di stabilire i dati transienti che vogliamo inviare. E' necessario speficiare il nome del parametro nella mappa dei dati transienti.
+'-o' permette di sbailire qual è l'organizzazione che sta eseguendo il metodo
+
+
