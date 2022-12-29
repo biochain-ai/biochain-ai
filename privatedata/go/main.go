@@ -6,11 +6,14 @@ This smartcontract will allow users to:
  - inform everyone of the data available for sharing
 
   More to be added
+  TODO
+   - check args, decide if they must be ignored if present or give error
 */
 
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -29,12 +32,6 @@ type data struct {
 	Owner       string
 	Description string
 }
-
-// Asset used to describe the data
-// type dataDescription struct {
-// 	Id          string
-// 	Description string
-// }
 
 // Asset used in the private databases to store the actual data
 type dataBioPrivateDetails struct {
@@ -248,7 +245,7 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("Failed to get data from the ledger: " + err.Error())
 	} else if dataBytes == nil {
 		fmt.Println("This data does not exists: " + removeDataInput.Name)
-		return shim.Error("This data cannot be removed, it does not exist")
+		return shim.Error("This data cannot be removed, it does not exist!")
 	}
 
 	// Check if the one how asked for deletion is the owner
@@ -277,14 +274,54 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 }
 
 // viewAllData
-// ========
+// ===========
+// This method returns all the key-value pairs in the ledger
 func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
-	return shim.Success(nil)
+	// Check the number of arguements
+	if len(args) != 0 {
+		return shim.Error("Incorrect number of arguments. Zero expected")
+	}
+
+	// Perform the range query
+	resultIterator, err := stub.GetStateByRange("", "")
+	if err != nil {
+		return shim.Error("Error during range query. " + err.Error())
+	}
+	defer resultIterator.Close()
+
+	// Write result on the buffer
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultIterator.HasNext() {
+		queryResponse, err := resultIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		// Add a comma before array member
+		if bArrayMemberAlreadyWritten {
+			buffer.WriteString(",")
+		}
+
+		buffer.WriteString(
+			fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+				queryResponse.Key, queryResponse.Value),
+		)
+		bArrayMemberAlreadyWritten = true
+
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
+
+	return shim.Success([]byte(buffer.String()))
 }
 
 // viewPersonalData
-// ========
+// ================
 func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	return shim.Success(nil)
 }
@@ -318,7 +355,7 @@ func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string)
 func main() {
 	err := shim.Start(&Chaincode{})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Exiting Simple chaincode: %s", err)
+		fmt.Fprintf(os.Stderr, "Error in chaincode start: %s", err)
 		os.Exit(2)
 	}
 }
