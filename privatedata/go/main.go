@@ -8,6 +8,7 @@ This smartcontract will allow users to:
   More to be added
   TODO
    - check args, decide if they must be ignored if present or give error
+   - find a way to do this: strings.Contains(dataElement.Owner, creator)
 */
 
 package main
@@ -17,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
@@ -260,7 +262,7 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 	creator = string(creatorBytes[:])
 
 	if data.Owner != creator {
-		return shim.Error("Deletion not allowed. Only the creator can delete its data.")
+		return shim.Error("Deletion not allowed. Only the creator can delete its data.\n" + data.Owner + "\n" + creator)
 	}
 
 	// Delete public state
@@ -322,8 +324,62 @@ func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string)
 
 // viewPersonalData
 // ================
+// This method allows to view all the personal data inserted
 func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	return shim.Success(nil)
+
+	// Check the number of arguements
+	if len(args) != 0 {
+		return shim.Error("Incorrect number of arguments. Zero expected")
+	}
+
+	// Perform the range query
+	resultIterator, err := stub.GetStateByRange("", "")
+	if err != nil {
+		return shim.Error("Error during range query. " + err.Error())
+	}
+	defer resultIterator.Close()
+
+	// Write result on the buffer
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultIterator.HasNext() {
+		queryResponse, err := resultIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		// Unmarshal the incoming data
+		var dataElement data
+		err = json.Unmarshal(queryResponse.Value, &dataElement)
+		if err != nil {
+			return shim.Error("Error unmashaling data from response.")
+		}
+
+		var creator string
+		creatorBytes, _ := stub.GetCreator()
+		creator = string(creatorBytes[:])
+
+		if strings.Contains(dataElement.Owner, creator) {
+			// Add a comma before array member
+			if bArrayMemberAlreadyWritten {
+				buffer.WriteString(",")
+			}
+
+			buffer.WriteString(
+				fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+					queryResponse.Key, queryResponse.Value),
+			)
+			bArrayMemberAlreadyWritten = true
+		}
+
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
+
+	return shim.Success([]byte(buffer.String()))
 }
 
 // requestData
