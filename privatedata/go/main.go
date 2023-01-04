@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -261,8 +262,12 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 	creatorBytes, _ := stub.GetCreator()
 	creator = string(creatorBytes[:])
 
+	// TO REMOVE
+	fmt.Printf("\nCreator: " + creator)
+	fmt.Printf("\ndata Owner: " + data.Owner)
+
 	if data.Owner != creator {
-		return shim.Error("Deletion not allowed. Only the creator can delete its data.\n" + data.Owner + "\n" + creator)
+		return shim.Error("Deletion not allowed. Only the creator can delete its data.")
 	}
 
 	// Delete public state
@@ -339,6 +344,8 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 	}
 	defer resultIterator.Close()
 
+	var creator string
+	var dataElement data
 	// Write result on the buffer
 	var buffer bytes.Buffer
 	buffer.WriteString("[")
@@ -351,21 +358,27 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 		}
 
 		// Unmarshal the incoming data
-		var dataElement data
 		err = json.Unmarshal(queryResponse.Value, &dataElement)
 		if err != nil {
 			return shim.Error("Error unmashaling data from response.")
 		}
 
-		var creator string
 		creatorBytes, _ := stub.GetCreator()
 		creator = string(creatorBytes[:])
 
-		if strings.Contains(dataElement.Owner, creator) {
+		// TO REMOVE
+		fmt.Printf("\nCreator: " + creator)
+		fmt.Printf("\ndata Owner: " + dataElement.Owner)
+		creator = strings.TrimSpace(strings.ToValidUTF8(creator, ""))
+		dataElementOwner := strings.TrimSpace(strings.ToValidUTF8(dataElement.Owner, ""))
+
+		if creator == dataElementOwner {
 			// Add a comma before array member
 			if bArrayMemberAlreadyWritten {
 				buffer.WriteString(",")
 			}
+
+			fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
 
 			buffer.WriteString(
 				fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
@@ -376,7 +389,9 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 
 	}
 	buffer.WriteString("]")
-
+	buffer.WriteString(" Something to see!!!!")
+	buffer.WriteString("creator len: " + strconv.Itoa((len(strings.TrimSpace(strings.ToValidUTF8(creator, ""))))))
+	buffer.WriteString("dataOwner len: " + strconv.Itoa((len(strings.TrimSpace(strings.ToValidUTF8(dataElement.Owner, ""))))))
 	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
 
 	return shim.Success([]byte(buffer.String()))
