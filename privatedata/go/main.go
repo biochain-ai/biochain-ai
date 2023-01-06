@@ -8,7 +8,6 @@ This smartcontract will allow users to:
   More to be added
   TODO
    - check args, decide if they must be ignored if present or give error
-   - find a way to do this: strings.Contains(dataElement.Owner, creator)
 */
 
 package main
@@ -18,9 +17,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
+	cid "github.com/hyperledger/fabric-chaincode-go/pkg/cid"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
@@ -156,9 +154,11 @@ func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("This data already exists: " + dataInput.Name)
 	}
 
+	// Creation of a unique string for the owner
 	var creator string
-	creatorBytes, _ := stub.GetCreator()
-	creator = string(creatorBytes[:])
+	Id, _ := cid.GetID(stub)
+	MSPID, _ := cid.GetMSPID(stub)
+	creator = Id + MSPID
 
 	// Create data to be inserted into the ledger
 	dataToInsert := &data{
@@ -174,7 +174,7 @@ func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) 
 	}
 
 	// Save data into the ledger
-	err = stub.PutState(dataInput.Name, dataToInsertJSON)
+	err = stub.PutState("DATA"+dataInput.Name, dataToInsertJSON)
 	if err != nil {
 		return shim.Error("Error during put state: " + err.Error())
 	}
@@ -190,7 +190,7 @@ func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("Error creating data: " + err.Error())
 	}
 
-	err = stub.PutPrivateData("collectionDatoBioPrivateDetails", dataInput.Name, dataBioJSON)
+	err = stub.PutPrivateData("collectionDatoBioPrivateDetails", "DATA"+dataInput.Name, dataBioJSON)
 	if err != nil {
 		return shim.Error("Error during put private state: " + err.Error())
 	}
@@ -258,13 +258,11 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("Error during data unmarshal")
 	}
 
+	// Creation of a unique string for the owner
 	var creator string
-	creatorBytes, _ := stub.GetCreator()
-	creator = string(creatorBytes[:])
-
-	// TO REMOVE
-	fmt.Printf("\nCreator: " + creator)
-	fmt.Printf("\ndata Owner: " + data.Owner)
+	Id, _ := cid.GetID(stub)
+	MSPID, _ := cid.GetMSPID(stub)
+	creator = Id + MSPID
 
 	if data.Owner != creator {
 		return shim.Error("Deletion not allowed. Only the creator can delete its data.")
@@ -291,7 +289,7 @@ func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string)
 	}
 
 	// Perform the range query
-	resultIterator, err := stub.GetStateByRange("", "")
+	resultIterator, err := stub.GetStateByRange("DATA", "")
 	if err != nil {
 		return shim.Error("Error during range query. " + err.Error())
 	}
@@ -338,7 +336,7 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 	}
 
 	// Perform the range query
-	resultIterator, err := stub.GetStateByRange("", "")
+	resultIterator, err := stub.GetStateByRange("DATA", "")
 	if err != nil {
 		return shim.Error("Error during range query. " + err.Error())
 	}
@@ -363,16 +361,11 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 			return shim.Error("Error unmashaling data from response.")
 		}
 
-		creatorBytes, _ := stub.GetCreator()
-		creator = string(creatorBytes[:])
+		Id, _ := cid.GetID(stub)
+		MSPID, _ := cid.GetMSPID(stub)
+		creator = Id + MSPID
 
-		// TO REMOVE
-		fmt.Printf("\nCreator: " + creator)
-		fmt.Printf("\ndata Owner: " + dataElement.Owner)
-		creator = strings.TrimSpace(strings.ToValidUTF8(creator, ""))
-		dataElementOwner := strings.TrimSpace(strings.ToValidUTF8(dataElement.Owner, ""))
-
-		if creator == dataElementOwner {
+		if creator == dataElement.Owner {
 			// Add a comma before array member
 			if bArrayMemberAlreadyWritten {
 				buffer.WriteString(",")
@@ -389,9 +382,7 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 
 	}
 	buffer.WriteString("]")
-	buffer.WriteString(" Something to see!!!!")
-	buffer.WriteString("creator len: " + strconv.Itoa((len(strings.TrimSpace(strings.ToValidUTF8(creator, ""))))))
-	buffer.WriteString("dataOwner len: " + strconv.Itoa((len(strings.TrimSpace(strings.ToValidUTF8(dataElement.Owner, ""))))))
+
 	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
 
 	return shim.Success([]byte(buffer.String()))
@@ -405,6 +396,7 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 
 // viewSharingRequests
 // ===================
+// This method allows to see all the requests of data sharing
 func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	return shim.Success(nil)
 }

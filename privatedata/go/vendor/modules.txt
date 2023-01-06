@@ -8,6 +8,8 @@ github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/hyperledger/fabric-chaincode-go v0.0.0-20220920210243-7bc6fa0dd58b
 ## explicit; go 1.17
+github.com/hyperledger/fabric-chaincode-go/pkg/attrmgr
+github.com/hyperledger/fabric-chaincode-go/pkg/cid
 github.com/hyperledger/fabric-chaincode-go/shim
 github.com/hyperledger/fabric-chaincode-go/shim/internal
 # github.com/hyperledger/fabric-protos-go v0.3.0
