@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 
 	cid "github.com/hyperledger/fabric-chaincode-go/pkg/cid"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -62,6 +63,22 @@ type assetRequest struct {
 // Initializes chaincode
 // =====================
 func (c *Chaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+
+	var counter int64
+	counter = 0
+
+	// Marshal counter
+	dataCounter, err := json.Marshal(counter)
+	if err != nil {
+		return shim.Error("Error Marshaling data during Init.")
+	}
+
+	// Init the request counter
+	err = stub.PutState("REQUESTCOUNTER", dataCounter)
+	if err != nil {
+		return shim.Error("Error during put state: " + err.Error())
+	}
+
 	return shim.Success(nil)
 }
 
@@ -156,9 +173,8 @@ func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) 
 
 	// Creation of a unique string for the owner
 	var creator string
-	Id, _ := cid.GetID(stub)
-	MSPID, _ := cid.GetMSPID(stub)
-	creator = Id + MSPID
+	// retrieve creator (Id + MSPID)
+	creator = getCreator(stub)
 
 	// Create data to be inserted into the ledger
 	dataToInsert := &data{
@@ -258,11 +274,9 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("Error during data unmarshal")
 	}
 
-	// Creation of a unique string for the owner
 	var creator string
-	Id, _ := cid.GetID(stub)
-	MSPID, _ := cid.GetMSPID(stub)
-	creator = Id + MSPID
+	// retrieve creator (Id + MSPID)
+	creator = getCreator(stub)
 
 	if data.Owner != creator {
 		return shim.Error("Deletion not allowed. Only the creator can delete its data.")
@@ -361,9 +375,8 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 			return shim.Error("Error unmashaling data from response.")
 		}
 
-		Id, _ := cid.GetID(stub)
-		MSPID, _ := cid.GetMSPID(stub)
-		creator = Id + MSPID
+		// retrieve creator (Id + MSPID)
+		creator = getCreator(stub)
 
 		if creator == dataElement.Owner {
 			// Add a comma before array member
@@ -390,7 +403,80 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 
 // requestData
 // ===========
+// This method allows to create a request for a data owned by another
+// organization. The name of the data must be specified in the arguements during
+// the call.
 func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	// Check arguement consistency
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of parameters. Expecting 1.")
+	}
+
+	// Check existence of the data
+	dataBytes, err := stub.GetState("DATA" + args[0])
+	if err != nil {
+		return shim.Error("Failed to get data from the ledger: " + err.Error())
+	} else if dataBytes == nil {
+		fmt.Println("This data does not exists: " + args[0])
+		return shim.Error("This data cannot be requested, it does not exist!")
+	}
+
+	// Get value of the global counter of the requests
+	counterBytes, err := stub.GetState("REQUESTCOUNTER")
+	if err != nil {
+		return shim.Error("Failed to get Counter from the ledger!")
+	}
+	if counterBytes == nil {
+		fmt.Println("The counter does not exist!")
+		return shim.Error("Counter does not exist!")
+	}
+
+	var counter int64
+
+	// Unmarshal counter data
+	err = json.Unmarshal(counterBytes, &counter)
+	if err != nil {
+		return shim.Error("Error during data unmarshal")
+	}
+
+	// Increment counter
+	counter++
+
+	// Get applicant
+	applicant := getCreator(stub)
+
+	assetRequestProposal := assetRequest{
+		RequestId: counter,
+		Applicant: applicant,
+		DataId:    args[0],
+		Status:    Pending,
+	}
+
+	// Marshal data
+	assetRequestProposalJSON, err := json.Marshal(assetRequestProposal)
+	if err != nil {
+		return shim.Error("Error during data marshal.")
+	}
+
+	// Insert data into the ledger
+	err = stub.PutState("REQUEST"+strconv.FormatInt(counter, 10), assetRequestProposalJSON)
+	if err != nil {
+		// If something does wrong, restore the counter to the previous value
+		return shim.Error("Error during putState: " + err.Error())
+	}
+
+	counterJSON, err := json.Marshal(counter)
+	if err != nil {
+		return shim.Error("Error during data marshal.")
+	}
+
+	// Update counter value into the ledger
+	err = stub.PutState("REQUESTCOUNTER", counterJSON)
+	if err != nil {
+		return shim.Error("Error during putState: " + err.Error())
+	}
+
 	return shim.Success(nil)
 }
 
@@ -421,4 +507,16 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error in chaincode start: %s", err)
 		os.Exit(2)
 	}
+}
+
+// #############################################################################
+
+// getCreator
+// ==========
+// This function returns a string that represents the creator of the transaction
+func getCreator(stub shim.ChaincodeStubInterface) (creator string) {
+	Id, _ := cid.GetID(stub)
+	MSPID, _ := cid.GetMSPID(stub)
+	creator = Id + MSPID
+	return creator
 }
