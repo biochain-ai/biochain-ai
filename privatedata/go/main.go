@@ -1,14 +1,4 @@
-/*
-This smartcontract will allow users to:
- - insert data into their private database
- - make requests to obtain data of other users
- - accept or deny requests from other users to share data
- - inform everyone of the data available for sharing
-
-  More to be added
-  TODO
-   - check args, decide if they must be ignored if present or give error
-*/
+// TODO: fix 'viewSharingRequests'
 
 package main
 
@@ -20,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	cid "github.com/hyperledger/fabric-chaincode-go/pkg/cid"
+	"github.com/hyperledger/fabric-chaincode-go/pkg/cid"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
@@ -58,9 +48,6 @@ type assetRequest struct {
 	DataId    string
 	Status    status
 }
-
-// Default string for private collection's name
-const privateCollection = "PrivateCollection"
 
 // ============================================================================
 
@@ -516,7 +503,6 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 // ===================
 // This method allows to see all the requests of data sharing
 func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-
 	// Slice that will contain the id of all the personal data
 	var dataIdSlice = []string{}
 
@@ -568,34 +554,34 @@ func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args [
 		}
 
 		// Unmarshal the incoming data
-		err = json.Unmarshal(queryResponse.Value, &requestElement)
-		if err != nil {
-			return shim.Error("Error unmashaling data from response.")
+		if strings.Contains(queryResponse.Key, "REQUEST") {
+			err = json.Unmarshal(queryResponse.Value, &requestElement)
+			if err != nil {
+				return shim.Error("Error unmashaling data from response.")
+			}
 		}
-		// TODO invertire gli if
-		if sliceContains(dataIdSlice, requestElement.DataId) {
+
+		if strings.Contains(queryResponse.Key, "DATA") &&
+			sliceContains(dataIdSlice, requestElement.DataId) {
 			// Add a comma before array member
 			if bArrayMemberAlreadyWritten {
 				buffer.WriteString(",")
 			}
 
-			// Check if the retrieved key-value pair is about the DATA type
-			if strings.Contains(queryResponse.Key, "DATA") {
-				fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
+			fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
 
-				buffer.WriteString(
-					fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
-						queryResponse.Key, queryResponse.Value),
-				)
-				bArrayMemberAlreadyWritten = true
-			}
+			buffer.WriteString(
+				fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+					queryResponse.Key, queryResponse.Value),
+			)
+			bArrayMemberAlreadyWritten = true
 
 		}
 
 	}
 	buffer.WriteString("]")
 
-	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
+	fmt.Printf("- viewSharingRequests Result:\n%s\n", buffer.String())
 
 	return shim.Success(nil)
 }
@@ -608,7 +594,46 @@ func (c *Chaincode) acceptRequest(stub shim.ChaincodeStubInterface, args []strin
 
 // denyRequest
 // ===========
+// This method allow the user to deny a request of data sharing. Giver a
+// requestId this methods puts the request from Pending to Rejected.
 func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	// TODO: check if the caller is the property of the data being requested
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of parameters. Expecting 1.")
+	}
+
+	// Convert string to int64
+	requestIdInput, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		return shim.Error("Error converting requestId from string to int64")
+	}
+
+	// Retrieve the request
+	key := "REQUEST" + strconv.FormatInt(requestIdInput, 10)
+	requestBytes, err := stub.GetState(key)
+	if err != nil {
+		return shim.Error("Error retrieving data from the ledger!")
+	}
+
+	var requestToReject assetRequest
+	err = json.Unmarshal(requestBytes, &requestToReject)
+	if err != nil {
+		return shim.Error("Error unmarshaling data")
+	}
+
+	// Change the state
+	requestToReject.Status = Rejected
+
+	requestBytes, err = json.Marshal(requestToReject)
+	if err != nil {
+		return shim.Error("Error marshaling data")
+	}
+
+	// Insert again the data
+	err = stub.PutState(key, requestBytes)
+
 	return shim.Success(nil)
 }
 
@@ -640,8 +665,8 @@ func getCreator(stub shim.ChaincodeStubInterface) (creator string) {
 // of the transaction
 func getCollectionName(stub shim.ChaincodeStubInterface) (collectionName string) {
 
-	collectionName, _ = cid.GetMSPID(stub)
-	collectionName = collectionName + privateCollection
+	MSPID, _ := cid.GetMSPID(stub)
+	collectionName = MSPID + "PrivateCollection"
 
 	return collectionName
 }

@@ -21,8 +21,8 @@ cp ~/_uni/borsa/biochain-ai/privatedata_collection_config.json ~/minifab/vars/
 echo "--------------------------"
 echo "-- Installing chaincode --"
 echo "--------------------------"
-#minifab install -n privatedata -r true
-minifab ccup -n privatedata -l go -v 1.0 -r true
+minifab install -n privatedata -r true
+#minifab ccup -n privatedata -l go -v 1.0 -r true
 
 # echo "------------------------------"
 # echo "-- Replacing words with sed --"
