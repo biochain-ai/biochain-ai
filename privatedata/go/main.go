@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	cid "github.com/hyperledger/fabric-chaincode-go/pkg/cid"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -57,6 +58,9 @@ type assetRequest struct {
 	DataId    string
 	Status    status
 }
+
+// Default string for private collection's name
+const privateCollection = "PrivateCollection"
 
 // ============================================================================
 
@@ -206,7 +210,11 @@ func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("Error creating data: " + err.Error())
 	}
 
-	err = stub.PutPrivateData("collectionDatoBioPrivateDetails", "DATA"+dataInput.Name, dataBioJSON)
+	// Retrieve private collection name
+	collectionName := getCollectionName(stub)
+
+	// Insert data into the private collection
+	err = stub.PutPrivateData(collectionName, "DATA"+dataInput.Name, dataBioJSON)
 	if err != nil {
 		return shim.Error("Error during put private state: " + err.Error())
 	}
@@ -288,6 +296,15 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error("Error removing the key from the ledger " + err.Error())
 	}
 
+	// Retrieve private collection name
+	collectionName := getCollectionName(stub)
+
+	// Remove the data from the private collection
+	err = stub.PurgePrivateData(collectionName, removeDataInput.Name)
+	if err != nil {
+		return shim.Error("Error removing the key from the private collection " + err.Error())
+	}
+
 	fmt.Println("end removeData")
 	return shim.Success(nil)
 }
@@ -325,11 +342,16 @@ func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string)
 			buffer.WriteString(",")
 		}
 
-		buffer.WriteString(
-			fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
-				queryResponse.Key, queryResponse.Value),
-		)
-		bArrayMemberAlreadyWritten = true
+		// TODO: add data unmarshaling
+
+		// Check if the retrieved key-value pair is about the DATA type
+		if strings.Contains(queryResponse.Key, "DATA") {
+			buffer.WriteString(
+				fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+					queryResponse.Key, queryResponse.Value),
+			)
+			bArrayMemberAlreadyWritten = true
+		}
 
 	}
 	buffer.WriteString("]")
@@ -369,28 +391,36 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 			return shim.Error(err.Error())
 		}
 
-		// Unmarshal the incoming data
-		err = json.Unmarshal(queryResponse.Value, &dataElement)
-		if err != nil {
-			return shim.Error("Error unmashaling data from response.")
-		}
+		// Check if the retrieved key-value pair is about the DATA type
+		if strings.Contains(queryResponse.Key, "DATA") {
 
-		// retrieve creator (Id + MSPID)
-		creator = getCreator(stub)
-
-		if creator == dataElement.Owner {
-			// Add a comma before array member
-			if bArrayMemberAlreadyWritten {
-				buffer.WriteString(",")
+			// Unmarshal the incoming data
+			err = json.Unmarshal(queryResponse.Value, &dataElement)
+			if err != nil {
+				return shim.Error("Error unmashaling data from response.")
 			}
 
-			fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
+			// retrieve creator (Id + MSPID)
+			creator = getCreator(stub)
 
-			buffer.WriteString(
-				fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
-					queryResponse.Key, queryResponse.Value),
-			)
-			bArrayMemberAlreadyWritten = true
+			if creator == dataElement.Owner {
+				// Add a comma before array member
+				if bArrayMemberAlreadyWritten {
+					buffer.WriteString(",")
+				}
+
+				// Check if the retrieved key-value pair is about the DATA type
+				if strings.Contains(queryResponse.Key, "DATA") {
+					fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
+
+					buffer.WriteString(
+						fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+							queryResponse.Key, queryResponse.Value),
+					)
+					bArrayMemberAlreadyWritten = true
+				}
+
+			}
 		}
 
 	}
@@ -412,6 +442,8 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of parameters. Expecting 1.")
 	}
+
+	fmt.Println("Args: " + args[0])
 
 	// Check existence of the data
 	dataBytes, err := stub.GetState("DATA" + args[0])
@@ -484,6 +516,87 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 // ===================
 // This method allows to see all the requests of data sharing
 func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	// Slice that will contain the id of all the personal data
+	var dataIdSlice = []string{}
+
+	if len(args) != 0 {
+		return shim.Error("Incorrect number of parameters. Expected 0.")
+	}
+
+	// Perform the range query for the requests
+	resultIteratorRequests, err := stub.GetStateByRange("REQUEST", "")
+	if err != nil {
+		return shim.Error("Error during range query. " + err.Error())
+	}
+	defer resultIteratorRequests.Close()
+
+	// Perform the range query for the personal data
+	collectionName := getCollectionName(stub)
+	resultIteratorData, err := stub.GetPrivateDataByRange(collectionName, "", "")
+	if err != nil {
+		return shim.Error("Error during range query. " + err.Error())
+	}
+	defer resultIteratorData.Close()
+
+	// Populate the slice
+	var dataTemp data
+	for resultIteratorData.HasNext() {
+		response, err := resultIteratorData.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		err = json.Unmarshal(response.Value, &dataTemp)
+		if err != nil {
+			return shim.Error("Error unmarshaling data response " + err.Error())
+		}
+
+		dataIdSlice = append(dataIdSlice, dataTemp.Id)
+	}
+
+	var requestElement assetRequest
+	// Write result on the buffer
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultIteratorRequests.HasNext() {
+		queryResponse, err := resultIteratorRequests.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		// Unmarshal the incoming data
+		err = json.Unmarshal(queryResponse.Value, &requestElement)
+		if err != nil {
+			return shim.Error("Error unmashaling data from response.")
+		}
+		// TODO invertire gli if
+		if sliceContains(dataIdSlice, requestElement.DataId) {
+			// Add a comma before array member
+			if bArrayMemberAlreadyWritten {
+				buffer.WriteString(",")
+			}
+
+			// Check if the retrieved key-value pair is about the DATA type
+			if strings.Contains(queryResponse.Key, "DATA") {
+				fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
+
+				buffer.WriteString(
+					fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+						queryResponse.Key, queryResponse.Value),
+				)
+				bArrayMemberAlreadyWritten = true
+			}
+
+		}
+
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
+
 	return shim.Success(nil)
 }
 
@@ -519,4 +632,28 @@ func getCreator(stub shim.ChaincodeStubInterface) (creator string) {
 	MSPID, _ := cid.GetMSPID(stub)
 	creator = Id + MSPID
 	return creator
+}
+
+// getCollectionName
+// =================
+// This function returns the name of the private collection of the creatore
+// of the transaction
+func getCollectionName(stub shim.ChaincodeStubInterface) (collectionName string) {
+
+	collectionName, _ = cid.GetMSPID(stub)
+	collectionName = collectionName + privateCollection
+
+	return collectionName
+}
+
+// sliceContains
+// =============
+// Contains function for slices of strings
+func sliceContains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

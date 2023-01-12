@@ -6,6 +6,8 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/google/go-cmp v0.5.8
+## explicit; go 1.13
 # github.com/hyperledger/fabric-chaincode-go v0.0.0-20220920210243-7bc6fa0dd58b
 ## explicit; go 1.17
 github.com/hyperledger/fabric-chaincode-go/pkg/attrmgr
@@ -27,9 +29,8 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
+# golang.org/x/sys v0.1.0
 ## explicit; go 1.17
-golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.7
 ## explicit; go 1.17

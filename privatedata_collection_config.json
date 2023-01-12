@@ -1,0 +1,39 @@
+[
+ {
+    "name": "parma-comPrivateCollection",
+    "policy": "OR( 'parma-com.member' )",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 1,
+    "blockToLive":30000,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": false,
+    "endorsementPolicy": {
+	"signaturePolicy": "OR( 'parma-com.member' )"
+    }
+ },
+ {
+    "name": "brescia-comPrivateCollection",
+    "policy": "OR( 'brescia-com.member' )",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 1,
+    "blockToLive":30000,
+    "memberOnlyRead": true, 
+    "memberOnlyWrite": false,
+    "endorsementPolicy": {
+        "signaturePolicy": "OR( 'brescia-com.member' )"
+    }
+ },
+ {
+    "name": "mantova-comPrivateCollection",
+    "policy": "OR( 'mantova-com.member' )",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 1,
+    "blockToLive":30000,
+    "memberOnlyRead": true, 
+    "memberOnlyWrite": false,
+    "endorsementPolicy": {
+        "signaturePolicy": "OR( 'mantova-com.member' )"
+    }
+ }
+]
+
