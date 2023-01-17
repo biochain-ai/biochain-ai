@@ -46,6 +46,7 @@ type assetRequest struct {
 	RequestId int64
 	Applicant string
 	DataId    string
+	Owner     string
 	Status    status
 }
 
@@ -88,6 +89,8 @@ func (c *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return c.viewAllData(stub, args)
 	case "viewPersonalData":
 		return c.viewPersonalData(stub, args)
+	case "viewSecretData":
+		return c.viewSecretData(stub, args)
 	case "requestData":
 		return c.requestData(stub, args)
 	case "viewSharingRequests":
@@ -96,6 +99,8 @@ func (c *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return c.acceptRequest(stub, args)
 	case "denyRequest":
 		return c.denyRequest(stub, args)
+	case "viewAllRequests":
+		return c.viewAllRequests(stub, args)
 	default:
 		fmt.Println("Unknown function!")
 		return shim.Error("Received unknown function")
@@ -329,8 +334,6 @@ func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string)
 			buffer.WriteString(",")
 		}
 
-		// TODO: add data unmarshaling
-
 		// Check if the retrieved key-value pair is about the DATA type
 		if strings.Contains(queryResponse.Key, "DATA") {
 			buffer.WriteString(
@@ -396,16 +399,13 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 					buffer.WriteString(",")
 				}
 
-				// Check if the retrieved key-value pair is about the DATA type
-				if strings.Contains(queryResponse.Key, "DATA") {
-					fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
+				fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
 
-					buffer.WriteString(
-						fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
-							queryResponse.Key, queryResponse.Value),
-					)
-					bArrayMemberAlreadyWritten = true
-				}
+				buffer.WriteString(
+					fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+						queryResponse.Key, queryResponse.Value),
+				)
+				bArrayMemberAlreadyWritten = true
 
 			}
 		}
@@ -416,6 +416,54 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
 
 	return shim.Success([]byte(buffer.String()))
+}
+
+// viewSecretData
+// ==============
+// This method allows to see the secret data stored in the private collection
+func (c *Chaincode) viewSecretData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	collectionName := getCollectionName(stub)
+	fmt.Println("Collection name: " + collectionName)
+
+	resultIterator, err := stub.GetPrivateDataByRange(collectionName, "", "")
+	if err != nil {
+		return shim.Error("Error retrieving the data from the collection!")
+	}
+	defer resultIterator.Close()
+
+	// Write result on the buffer
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultIterator.HasNext() {
+		queryResponse, err := resultIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		// Add a comma before array member
+		if bArrayMemberAlreadyWritten {
+			buffer.WriteString(",")
+		}
+
+		// Check if the retrieved key-value pair is about the DATA type
+		if strings.Contains(queryResponse.Key, "DATA") {
+			buffer.WriteString(
+				fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+					queryResponse.Key, queryResponse.Value),
+			)
+			bArrayMemberAlreadyWritten = true
+		}
+
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("- viewSecretData Result:\n%s\n", buffer.String())
+
+	// CANNOT PRINT THE BUFFER, GIVES ERROR
+	return shim.Success(nil)
 }
 
 // requestData
@@ -439,6 +487,12 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 	} else if dataBytes == nil {
 		fmt.Println("This data does not exists: " + args[0])
 		return shim.Error("This data cannot be requested, it does not exist!")
+	}
+
+	var dataRequested assetRequest
+	err = json.Unmarshal(dataBytes, &dataRequested)
+	if err != nil {
+		return shim.Error("Error during data unmarshal!")
 	}
 
 	// Get value of the global counter of the requests
@@ -469,6 +523,7 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 		RequestId: counter,
 		Applicant: applicant,
 		DataId:    args[0],
+		Owner:     dataRequested.Owner,
 		Status:    Pending,
 	}
 
@@ -503,9 +558,6 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 // ===================
 // This method allows to see all the requests of data sharing
 func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	// Slice that will contain the id of all the personal data
-	var dataIdSlice = []string{}
-
 	if len(args) != 0 {
 		return shim.Error("Incorrect number of parameters. Expected 0.")
 	}
@@ -517,29 +569,8 @@ func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args [
 	}
 	defer resultIteratorRequests.Close()
 
-	// Perform the range query for the personal data
-	collectionName := getCollectionName(stub)
-	resultIteratorData, err := stub.GetPrivateDataByRange(collectionName, "", "")
-	if err != nil {
-		return shim.Error("Error during range query. " + err.Error())
-	}
-	defer resultIteratorData.Close()
-
-	// Populate the slice
-	var dataTemp data
-	for resultIteratorData.HasNext() {
-		response, err := resultIteratorData.Next()
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-
-		err = json.Unmarshal(response.Value, &dataTemp)
-		if err != nil {
-			return shim.Error("Error unmarshaling data response " + err.Error())
-		}
-
-		dataIdSlice = append(dataIdSlice, dataTemp.Id)
-	}
+	// Retrieve caller
+	creator := getCreator(stub)
 
 	var requestElement assetRequest
 	// Write result on the buffer
@@ -553,16 +584,66 @@ func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args [
 			return shim.Error(err.Error())
 		}
 
-		// Unmarshal the incoming data
-		if strings.Contains(queryResponse.Key, "REQUEST") {
+		if strings.Contains(queryResponse.Key, "REQUEST") &&
+			!strings.Contains(queryResponse.Key, "COUNTER") {
+			// Unmarshal the incoming data
 			err = json.Unmarshal(queryResponse.Value, &requestElement)
 			if err != nil {
 				return shim.Error("Error unmashaling data from response.")
 			}
+
+			// Check the owner
+			if requestElement.Owner == creator {
+				// Add a comma before array member
+				if bArrayMemberAlreadyWritten {
+					buffer.WriteString(",")
+				}
+
+				fmt.Printf(`{"Key":"%s", "Record":"%s"}`, queryResponse.Key, queryResponse.Value)
+
+				buffer.WriteString(
+					fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+						queryResponse.Key, queryResponse.Value),
+				)
+				bArrayMemberAlreadyWritten = true
+
+			}
 		}
 
-		if strings.Contains(queryResponse.Key, "DATA") &&
-			sliceContains(dataIdSlice, requestElement.DataId) {
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("- viewSharingRequests Result:\n%s\n", buffer.String())
+
+	return shim.Success([]byte(buffer.String()))
+}
+
+// viewAllRequests
+// ===============
+// This function allows to see all the sharing requests present in the ledger
+func (c *Chaincode) viewAllRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	// Perform the range query for the requests
+	resultIteratorRequests, err := stub.GetStateByRange("REQUEST", "")
+	if err != nil {
+		return shim.Error("Error during range query. " + err.Error())
+	}
+	defer resultIteratorRequests.Close()
+
+	// Write result on the buffer
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultIteratorRequests.HasNext() {
+		queryResponse, err := resultIteratorRequests.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		// Check if the key-value pair is a request
+		if strings.Contains(queryResponse.Key, "REQUEST") &&
+			!strings.Contains(queryResponse.Key, "COUNTER") {
 			// Add a comma before array member
 			if bArrayMemberAlreadyWritten {
 				buffer.WriteString(",")
@@ -581,24 +662,14 @@ func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args [
 	}
 	buffer.WriteString("]")
 
-	fmt.Printf("- viewSharingRequests Result:\n%s\n", buffer.String())
+	fmt.Printf("- viewAllRequests Result:\n%s\n", buffer.String())
 
-	return shim.Success(nil)
+	return shim.Success([]byte(buffer.String()))
 }
 
 // acceptRequest
 // =============
 func (c *Chaincode) acceptRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	return shim.Success(nil)
-}
-
-// denyRequest
-// ===========
-// This method allow the user to deny a request of data sharing. Giver a
-// requestId this methods puts the request from Pending to Rejected.
-func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-
-	// TODO: check if the caller is the property of the data being requested
 
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of parameters. Expecting 1.")
@@ -615,6 +686,88 @@ func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string)
 	requestBytes, err := stub.GetState(key)
 	if err != nil {
 		return shim.Error("Error retrieving data from the ledger!")
+	} else if requestBytes == nil {
+		fmt.Println("This request does not exists: " + key)
+		return shim.Error("This request does not exist! " + key)
+	}
+
+	var requestToAccept assetRequest
+	err = json.Unmarshal(requestBytes, &requestToAccept)
+	if err != nil {
+		return shim.Error("Error unmarshaling data")
+	}
+
+	// Check if the caller is the owner of the requested resource
+	creator := getCreator(stub)
+	if creator != requestToAccept.Owner {
+		return shim.Error("You are not allowed to manage this request!")
+	}
+
+	// Change the state to ACCEPTED
+	requestToAccept.Status = Accepted
+
+	requestBytes, err = json.Marshal(requestToAccept)
+	if err != nil {
+		return shim.Error("Error marshaling data")
+	}
+
+	// Retrieve personal collection name
+	personalCollectionName := getCollectionName(stub)
+
+	// Retrieve the private data
+	privateDataBytes, err := stub.GetPrivateData(personalCollectionName, requestToAccept.DataId)
+	if err != nil {
+		return shim.Error("Error retrieving data from personal collection")
+	}
+
+	// Retrieve applicant collection name
+	applicant := strings.Split(requestToAccept.Applicant, "#")
+	if len(applicant) != 2 {
+		return shim.Error("Error splitting applicant name!")
+	}
+
+	// Create applicant complete collection name
+	applicantCollectionName := applicant[1] + "PrivateCollection"
+
+	// Copy the secret data to applicant secret collection
+	err = stub.PutPrivateData(applicantCollectionName, requestToAccept.DataId, privateDataBytes)
+	if err != nil {
+		return shim.Error("Error coping data into the applicante secret collection")
+	}
+
+	// Insert back the modified data in the ledger
+	err = stub.PutState(key, requestBytes)
+	if err != nil {
+		return shim.Error("Error in the putState")
+	}
+
+	return shim.Success(nil)
+}
+
+// denyRequest
+// ===========
+// This method allow the user to deny a request of data sharing. Giver a
+// requestId this methods puts the request from Pending to Rejected.
+func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of parameters. Expecting 1.")
+	}
+
+	// Convert string to int64
+	requestIdInput, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		return shim.Error("Error converting requestId from string to int64")
+	}
+
+	// Retrieve the request
+	key := "REQUEST" + strconv.FormatInt(requestIdInput, 10)
+	requestBytes, err := stub.GetState(key)
+	if err != nil {
+		return shim.Error("Error retrieving data from the ledger!")
+	} else if requestBytes == nil {
+		fmt.Println("This request does not exists: " + key)
+		return shim.Error("This request does not exist! " + key)
 	}
 
 	var requestToReject assetRequest
@@ -623,7 +776,13 @@ func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string)
 		return shim.Error("Error unmarshaling data")
 	}
 
-	// Change the state
+	// Check if the caller is the owner of the requested resource
+	creator := getCreator(stub)
+	if creator != requestToReject.Owner {
+		return shim.Error("You are not allowed to manage this request!")
+	}
+
+	// Change the state to REJECTED
 	requestToReject.Status = Rejected
 
 	requestBytes, err = json.Marshal(requestToReject)
@@ -631,8 +790,11 @@ func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string)
 		return shim.Error("Error marshaling data")
 	}
 
-	// Insert again the data
+	// Insert back the modified data in the ledger
 	err = stub.PutState(key, requestBytes)
+	if err != nil {
+		return shim.Error("Error in the putState")
+	}
 
 	return shim.Success(nil)
 }
@@ -655,7 +817,7 @@ func main() {
 func getCreator(stub shim.ChaincodeStubInterface) (creator string) {
 	Id, _ := cid.GetID(stub)
 	MSPID, _ := cid.GetMSPID(stub)
-	creator = Id + MSPID
+	creator = Id + "#" + MSPID
 	return creator
 }
 
