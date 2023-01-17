@@ -1,4 +1,8 @@
-// TODO: fix 'viewSharingRequests'
+// TODO
+// - add check on input data
+// - check request number, avoid empty request
+// - add somethig to not show all accepted sharing requests
+// - add a method to see all the sharing requests, even the already accepted
 
 package main
 

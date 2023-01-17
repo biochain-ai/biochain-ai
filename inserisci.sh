@@ -1,7 +1,7 @@
 #!/bin/bash
-# Script per inserire dati dentro la blockchain
+# Script per inserire dati dentro la blockchain e fare alcuni test
 
-echo "Inizio Script!!"
+echo "Script start!!"
 
 echo "-------------------"
 echo "-- Insering data --"
@@ -22,5 +22,25 @@ echo "---------------------------"
 echo "-- Viewing personal data --"
 echo "---------------------------"
 minifab invoke -p '"viewPersonalData"' -o mantova.com
+
+echo "------------------"
+echo "-- Request data --"
+echo "------------------"
+minifab invoke -p '"requestData","PrimoDato"' -o parma.com
+
+echo "--------------------------"
+echo "-- View sharing request --"
+echo "--------------------------"
+minifab invoke -p '"viewSharingRequests"' -o mantova.com
+
+echo "----------------------------"
+echo "-- Accept sharing request --"
+echo "----------------------------"
+minifab invoke -p '"acceptRequest","1"'  -o mantova.com
+
+echo "----------------------------------"
+echo "-- View secret of the applicant --"
+echo "----------------------------------"
+minifab invoke -p '"viewSecretData"' -o parma.com
 
 echo "Done!"
