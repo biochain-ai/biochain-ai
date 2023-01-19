@@ -1,0 +1,206 @@
+{
+  "name": "biochain-net",
+  "x-comment-0": "ROOTPATH should be set to the absolute path of crypto material starting directory",
+  "x-comment-1": "for example: export ROOTPATH=/home/ubuntu/mywork/vars/keyfiles",
+  "x-type": "hlfv-2.3.0",
+  "version": "1.0.0",
+  "client": {
+    "organization": "mantova.com",
+    "cryptoconfig": {
+      "path": "${ROOTPATH}"
+    },
+    "connection": {
+      "timeout": {
+        "peer": { "endorser": "300", "eventHub": "300", "eventReg": "300"},
+        "orderer": "300"
+      }
+    }
+  },
+  "channels": {
+    "mychannel": {
+      "orderers": [
+        "orderer1.example.com",
+        "orderer2.example.com"
+      ],
+      "peers": {
+        "tizio.parma.com": {
+          "endorsingPeer": true, "chaincodeQuery": true, "eventSource": true
+        },
+        "pippo.brescia.com": {
+          "endorsingPeer": true, "chaincodeQuery": true, "eventSource": true
+        },
+        "renzo.mantova.com": {
+          "endorsingPeer": true, "chaincodeQuery": true, "eventSource": true
+        }
+      }
+    }
+  },
+  "organizations": {
+    "brescia.com": {
+      "mspid": "brescia-com",
+      "cryptoPath": "peerOrganizations/brescia.com/users/{username}@brescia.com/msp",
+      "peers": [
+        "pippo.brescia.com"
+      ],
+      "certificateAuthorities": [
+       "ca1.brescia.com"
+      ]
+    },
+    "example.com": {
+      "mspid": "example-com",
+      "cryptoPath": "ordererOrganizations/example.com/users/{username}@example.com/msp",
+      "orderers": [
+        "orderer1.example.com",
+        "orderer2.example.com"
+      ],
+      "certificateAuthorities": [
+      ]
+    },
+    "mantova.com": {
+      "mspid": "mantova-com",
+      "cryptoPath": "peerOrganizations/mantova.com/users/{username}@mantova.com/msp",
+      "peers": [
+        "renzo.mantova.com"
+      ],
+      "certificateAuthorities": [
+       "ca1.mantova.com"
+      ]
+    },
+    "parma.com": {
+      "mspid": "parma-com",
+      "cryptoPath": "peerOrganizations/parma.com/users/{username}@parma.com/msp",
+      "peers": [
+        "tizio.parma.com"
+      ],
+      "certificateAuthorities": [
+       "ca1.parma.com"
+      ]
+    }
+  },
+  "orderers": {
+    "orderer1.example.com": {
+      "url": "grpcs://orderer1.example.com:7050",
+      "grpcOptions": {
+        "ssl-target-name-override": "orderer1.example.com"
+      },
+      "tlsCACerts": {
+        "pem": "-----BEGIN CERTIFICATE-----\nMIICojCCAkigAwIBAgIUd8h+AmwAiUgXUBeGEjqLumoClEMwCgYIKoZIzj0EAwIw\najELMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQH\nDAdSYWxlaWdoMRQwEgYDVQQKDAtleGFtcGxlLmNvbTEaMBgGA1UEAwwRdGxzY2Eu\nZXhhbXBsZS5jb20wHhcNMjMwMTE5MTUwMjA1WhcNMzMwMTE2MTUwMjA1WjBqMQsw\nCQYDVQQGEwJVUzEXMBUGA1UECAwOTm9ydGggQ2Fyb2xpbmExEDAOBgNVBAcMB1Jh\nbGVpZ2gxFDASBgNVBAoMC2V4YW1wbGUuY29tMRowGAYDVQQDDBF0bHNjYS5leGFt\ncGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFAsR2gRAKtMHObRM3D1\nucV/S7sUwJUzVkc8isAHlabgiEMdHtlP6U3YDTmHHhOTcrEr1el2jJ3ZgN4C1sWd\nPxmjgcswgcgwHQYDVR0OBBYEFE+Thzdv6kaeA/DOR3vb7XJIvjqxMB8GA1UdIwQY\nMBaAFE+Thzdv6kaeA/DOR3vb7XJIvjqxMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0P\nAQH/BAQDAgGmMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjBGBgNVHREE\nPzA9hwTAqAEIghF0bHNjYS5leGFtcGxlLmNvbYIRdGxzY2EtZXhhbXBsZS1jb22C\nCWxvY2FsaG9zdIcEfwAAATAKBggqhkjOPQQDAgNIADBFAiEAmTveC+dYjiNoaW78\nvp67T6ChkfsQCikBQn/WDNyI0rECIEYCiddp7QQ9Jwodp87PJj0kqcmy4oe1lZxU\nlO/uasGk\n-----END CERTIFICATE-----"
+      }
+    },
+    "orderer2.example.com": {
+      "url": "grpcs://orderer2.example.com:7050",
+      "grpcOptions": {
+        "ssl-target-name-override": "orderer2.example.com"
+      },
+      "tlsCACerts": {
+        "pem": "-----BEGIN CERTIFICATE-----\nMIICojCCAkigAwIBAgIUd8h+AmwAiUgXUBeGEjqLumoClEMwCgYIKoZIzj0EAwIw\najELMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQH\nDAdSYWxlaWdoMRQwEgYDVQQKDAtleGFtcGxlLmNvbTEaMBgGA1UEAwwRdGxzY2Eu\nZXhhbXBsZS5jb20wHhcNMjMwMTE5MTUwMjA1WhcNMzMwMTE2MTUwMjA1WjBqMQsw\nCQYDVQQGEwJVUzEXMBUGA1UECAwOTm9ydGggQ2Fyb2xpbmExEDAOBgNVBAcMB1Jh\nbGVpZ2gxFDASBgNVBAoMC2V4YW1wbGUuY29tMRowGAYDVQQDDBF0bHNjYS5leGFt\ncGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFAsR2gRAKtMHObRM3D1\nucV/S7sUwJUzVkc8isAHlabgiEMdHtlP6U3YDTmHHhOTcrEr1el2jJ3ZgN4C1sWd\nPxmjgcswgcgwHQYDVR0OBBYEFE+Thzdv6kaeA/DOR3vb7XJIvjqxMB8GA1UdIwQY\nMBaAFE+Thzdv6kaeA/DOR3vb7XJIvjqxMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0P\nAQH/BAQDAgGmMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjBGBgNVHREE\nPzA9hwTAqAEIghF0bHNjYS5leGFtcGxlLmNvbYIRdGxzY2EtZXhhbXBsZS1jb22C\nCWxvY2FsaG9zdIcEfwAAATAKBggqhkjOPQQDAgNIADBFAiEAmTveC+dYjiNoaW78\nvp67T6ChkfsQCikBQn/WDNyI0rECIEYCiddp7QQ9Jwodp87PJj0kqcmy4oe1lZxU\nlO/uasGk\n-----END CERTIFICATE-----"
+      }
+    }
+  },
+  "peers": {
+    "tizio.parma.com": {
+      "url": "grpcs://tizio.parma.com:7051",
+      "grpcOptions": {
+        "ssl-target-name-override": "tizio.parma.com"
+      },
+      "tlsCACerts": {
+        "pem": "-----BEGIN CERTIFICATE-----\nMIICmjCCAkCgAwIBAgIUODwNr0PqU/oc2BcArzhGo1u22DMwCgYIKoZIzj0EAwIw\nZzELMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQH\nDAdSYWxlaWdoMRIwEAYDVQQKDAlwYXJtYS5jb20xGTAXBgNVBAMMEHRsc2NhMS5w\nYXJtYS5jb20wHhcNMjMwMTE5MTUwMjQyWhcNMzMwMTE2MTUwMjQyWjBnMQswCQYD\nVQQGEwJVUzEXMBUGA1UECAwOTm9ydGggQ2Fyb2xpbmExEDAOBgNVBAcMB1JhbGVp\nZ2gxEjAQBgNVBAoMCXBhcm1hLmNvbTEZMBcGA1UEAwwQdGxzY2ExLnBhcm1hLmNv\nbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGxuJZG2gMDUX6L9ZeIP399I6ooo\n9jGZgaIGXvGx5Q9wgkTiv9FuWlF//IxJjABVn/bAnBpBjlZWDFXBRoCXCc2jgckw\ngcYwHQYDVR0OBBYEFGQueNKtjBXiFX28JMNT3ODSJArYMB8GA1UdIwQYMBaAFGQu\neNKtjBXiFX28JMNT3ODSJArYMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQD\nAgGmMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjBEBgNVHREEPTA7hwTA\nqAEIghB0bHNjYTEucGFybWEuY29tghB0bHNjYTEtcGFybWEtY29tgglsb2NhbGhv\nc3SHBH8AAAEwCgYIKoZIzj0EAwIDSAAwRQIgDFe4ONwRRC/e2ybrqBMBkUOaxSBW\nLwihrMp/C7lzxkACIQDFjZ6SXRZvXV8+asIzQmgD7N2A4Pjei2uHa0PkoOm8zg==\n-----END CERTIFICATE-----"
+      }
+    },
+    "pippo.brescia.com": {
+      "url": "grpcs://pippo.brescia.com:7051",
+      "grpcOptions": {
+        "ssl-target-name-override": "pippo.brescia.com"
+      },
+      "tlsCACerts": {
+        "pem": "-----BEGIN CERTIFICATE-----\nMIICpTCCAkygAwIBAgIUH65vYeu5Rsy1VRNAXl+VPHtGn4kwCgYIKoZIzj0EAwIw\nazELMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQH\nDAdSYWxlaWdoMRQwEgYDVQQKDAticmVzY2lhLmNvbTEbMBkGA1UEAwwSdGxzY2Ex\nLmJyZXNjaWEuY29tMB4XDTIzMDExOTE1MDE1MFoXDTMzMDExNjE1MDE1MFowazEL\nMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQHDAdS\nYWxlaWdoMRQwEgYDVQQKDAticmVzY2lhLmNvbTEbMBkGA1UEAwwSdGxzY2ExLmJy\nZXNjaWEuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEvw6hRJAb4LuuMRrh\ng2rmnZGXYgEmU5/zXfKmW3npWhYE3wZh9n/gkssocs35sKK83jlPRczc+CJk7Gem\nBBU8eKOBzTCByjAdBgNVHQ4EFgQUKYacsI7ueEU4sUrz4o/Wn4u4wGIwHwYDVR0j\nBBgwFoAUKYacsI7ueEU4sUrz4o/Wn4u4wGIwDwYDVR0TAQH/BAUwAwEB/zAOBgNV\nHQ8BAf8EBAMCAaYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMEgGA1Ud\nEQRBMD+HBMCoAQiCEnRsc2NhMS5icmVzY2lhLmNvbYISdGxzY2ExLWJyZXNjaWEt\nY29tgglsb2NhbGhvc3SHBH8AAAEwCgYIKoZIzj0EAwIDRwAwRAIgTK73XPrBFx8R\nKLEvsqLW8HKb9+YjNfTq6pTvlR+XJDgCIHHJLf0UQhxpUYwr5f2MgDF4dkzZR1BO\ngrA2+Xrsyelo\n-----END CERTIFICATE-----"
+      }
+    },
+    "renzo.mantova.com": {
+      "url": "grpcs://renzo.mantova.com:7051",
+      "grpcOptions": {
+        "ssl-target-name-override": "renzo.mantova.com"
+      },
+      "tlsCACerts": {
+        "pem": "-----BEGIN CERTIFICATE-----\nMIICpjCCAkygAwIBAgIUf226CFqfAoeqGI5IPXOM+nZ0LvQwCgYIKoZIzj0EAwIw\nazELMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQH\nDAdSYWxlaWdoMRQwEgYDVQQKDAttYW50b3ZhLmNvbTEbMBkGA1UEAwwSdGxzY2Ex\nLm1hbnRvdmEuY29tMB4XDTIzMDExOTE1MDIyNVoXDTMzMDExNjE1MDIyNVowazEL\nMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQHDAdS\nYWxlaWdoMRQwEgYDVQQKDAttYW50b3ZhLmNvbTEbMBkGA1UEAwwSdGxzY2ExLm1h\nbnRvdmEuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECOaAH0t/Vo/CliXA\nQmcxyoYDIWYmDmddMlKWqI/ieGEJQ32gFeQHyImNkzXg1ojq05wrQMXajQ2S7PZi\n+8KPTaOBzTCByjAdBgNVHQ4EFgQUM9ZgXatKsOtg2kv7RLne+0ttXyYwHwYDVR0j\nBBgwFoAUM9ZgXatKsOtg2kv7RLne+0ttXyYwDwYDVR0TAQH/BAUwAwEB/zAOBgNV\nHQ8BAf8EBAMCAaYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMEgGA1Ud\nEQRBMD+HBMCoAQiCEnRsc2NhMS5tYW50b3ZhLmNvbYISdGxzY2ExLW1hbnRvdmEt\nY29tgglsb2NhbGhvc3SHBH8AAAEwCgYIKoZIzj0EAwIDSAAwRQIhAI827w5nVvwG\nVZt4tHOQntLIbffI4rGBI8mxGk82NkuJAiA7yoNacWC0vWwDVRHtKZqN7N/2IJWz\nJUmd4Q2FSs3kiA==\n-----END CERTIFICATE-----"
+      }
+    }
+  },
+  "certificateAuthorities": {
+    "ca1.parma.com": {
+      "url": "https://ca1.parma.com:7054",
+      "tlsCACerts": {
+        "pem": ["-----BEGIN CERTIFICATE-----\nMIICjzCCAjSgAwIBAgIUaFNv4iQU3Iyu/yhX8OktCIl0U6EwCgYIKoZIzj0EAwIw\nZDELMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQH\nDAdSYWxlaWdoMRIwEAYDVQQKDAlwYXJtYS5jb20xFjAUBgNVBAMMDWNhMS5wYXJt\nYS5jb20wHhcNMjMwMTE5MTUwMjQxWhcNMzMwMTE2MTUwMjQxWjBkMQswCQYDVQQG\nEwJVUzEXMBUGA1UECAwOTm9ydGggQ2Fyb2xpbmExEDAOBgNVBAcMB1JhbGVpZ2gx\nEjAQBgNVBAoMCXBhcm1hLmNvbTEWMBQGA1UEAwwNY2ExLnBhcm1hLmNvbTBZMBMG\nByqGSM49AgEGCCqGSM49AwEHA0IABMih81CU6PrF+tZLv1XQTKmdSfPTX9CZwTnZ\nUamowditRb2TIoeT/wCD2MH9gZVX17LClyAOaN1q94/IT3t45iOjgcMwgcAwHQYD\nVR0OBBYEFJsMa3IJ+BZbWN8EQ96JOGM9z5ffMB8GA1UdIwQYMBaAFJsMa3IJ+BZb\nWN8EQ96JOGM9z5ffMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgGmMB0G\nA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjA+BgNVHREENzA1hwTAqAEIgg1j\nYTEucGFybWEuY29tgg1jYTEtcGFybWEtY29tgglsb2NhbGhvc3SHBH8AAAEwCgYI\nKoZIzj0EAwIDSQAwRgIhAPOsa5NWrhUXI5xjBM7mua3hoyVQuOuTlCwHarHP85PP\nAiEAykKlOZwWPmZ5VSqHoMuND/fb+vgbZvNE2iOX27fXAto=\n-----END CERTIFICATE-----"]
+      },
+      "httpOptions": { "verify": "false" },
+      "caName": "ca1",
+      "registrar": { "enrollId": "admin", "enrollSecret": "adminpw" }
+    },
+    "ca1.brescia.com": {
+      "url": "https://ca1.brescia.com:7054",
+      "tlsCACerts": {
+        "pem": ["-----BEGIN CERTIFICATE-----\nMIICmDCCAkCgAwIBAgIUYmI6oeMZl3UjAbZ2QUI9zhdvxnQwCgYIKoZIzj0EAwIw\naDELMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQH\nDAdSYWxlaWdoMRQwEgYDVQQKDAticmVzY2lhLmNvbTEYMBYGA1UEAwwPY2ExLmJy\nZXNjaWEuY29tMB4XDTIzMDExOTE1MDE1MFoXDTMzMDExNjE1MDE1MFowaDELMAkG\nA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQHDAdSYWxl\naWdoMRQwEgYDVQQKDAticmVzY2lhLmNvbTEYMBYGA1UEAwwPY2ExLmJyZXNjaWEu\nY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7oXMl25AJWmc2uWL5GEK/8lD\nO77AJDsT1PPP83OgvEVSVLmUiI8erVegaQu2UU4AhMkP9a0wmomOX3qMfNYbBqOB\nxzCBxDAdBgNVHQ4EFgQUJ0I9G4e/G+FRNfBqiVdXfY+7CHAwHwYDVR0jBBgwFoAU\nJ0I9G4e/G+FRNfBqiVdXfY+7CHAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8E\nBAMCAaYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMEIGA1UdEQQ7MDmH\nBMCoAQiCD2NhMS5icmVzY2lhLmNvbYIPY2ExLWJyZXNjaWEtY29tgglsb2NhbGhv\nc3SHBH8AAAEwCgYIKoZIzj0EAwIDRgAwQwIgbYxoj0TWmTw+ESndDc+tbX0Xlk3n\npayGgG56A6mYlEwCHzKMi/SdPbS6Z58/ChDIpmTSoxHSSY0nPeys9n39RfY=\n-----END CERTIFICATE-----"]
+      },
+      "httpOptions": { "verify": "false" },
+      "caName": "ca1",
+      "registrar": { "enrollId": "admin", "enrollSecret": "adminpw" }
+    },
+    "ca1.mantova.com": {
+      "url": "https://ca1.mantova.com:7054",
+      "tlsCACerts": {
+        "pem": ["-----BEGIN CERTIFICATE-----\nMIICmTCCAkCgAwIBAgIUYI2hrbjPWRiz86Fxqo61XHbui3wwCgYIKoZIzj0EAwIw\naDELMAkGA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQH\nDAdSYWxlaWdoMRQwEgYDVQQKDAttYW50b3ZhLmNvbTEYMBYGA1UEAwwPY2ExLm1h\nbnRvdmEuY29tMB4XDTIzMDExOTE1MDIyNVoXDTMzMDExNjE1MDIyNVowaDELMAkG\nA1UEBhMCVVMxFzAVBgNVBAgMDk5vcnRoIENhcm9saW5hMRAwDgYDVQQHDAdSYWxl\naWdoMRQwEgYDVQQKDAttYW50b3ZhLmNvbTEYMBYGA1UEAwwPY2ExLm1hbnRvdmEu\nY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+zttgG8JTRjYtdXbnBghPmjd\n00bc43DpMGVPXsC+g3WBYPT12b2AFQdhJUDzm6x/yLl8t7OLYNRMEJOXcXDeH6OB\nxzCBxDAdBgNVHQ4EFgQUJ5bw3hPNk75o3lHbV9J+VXQrvpQwHwYDVR0jBBgwFoAU\nJ5bw3hPNk75o3lHbV9J+VXQrvpQwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8E\nBAMCAaYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMEIGA1UdEQQ7MDmH\nBMCoAQiCD2NhMS5tYW50b3ZhLmNvbYIPY2ExLW1hbnRvdmEtY29tgglsb2NhbGhv\nc3SHBH8AAAEwCgYIKoZIzj0EAwIDRwAwRAIgc+nPg5EB3+6HU3psbIc/6d6+3JNJ\n/aIVQgBEHhwHoEcCIHbARWbSCuu8h2wqCKls6G7gCU/RTYpN16FRa2YgYtCG\n-----END CERTIFICATE-----"]
+      },
+      "httpOptions": { "verify": "false" },
+      "caName": "ca1",
+      "registrar": { "enrollId": "admin", "enrollSecret": "adminpw" }
+    }
+  },
+  "entityMatchers": {
+    "orderer": [
+      { "mappedHost": "orderer1.example.com",
+        "pattern": "(\\w*)orderer1.example.com(\\w*)",
+        "sslTargetOverrideUrlSubstitutionExp": "orderer1.example.com",
+        "urlSubstitutionExp": "orderer1.example.com:7050"
+      },
+      { "mappedHost": "orderer2.example.com",
+        "pattern": "(\\w*)orderer2.example.com(\\w*)",
+        "sslTargetOverrideUrlSubstitutionExp": "orderer2.example.com",
+        "urlSubstitutionExp": "orderer2.example.com:7050"
+      }
+    ],
+    "peer": [
+      { "mappedHost": "tizio.parma.com",
+        "pattern": "(\\w*)tizio.parma.com(\\w*)",
+        "sslTargetOverrideUrlSubstitutionExp": "tizio.parma.com",
+        "urlSubstitutionExp": "tizio.parma.com:7051"
+      },
+      { "mappedHost": "pippo.brescia.com",
+        "pattern": "(\\w*)pippo.brescia.com(\\w*)",
+        "sslTargetOverrideUrlSubstitutionExp": "pippo.brescia.com",
+        "urlSubstitutionExp": "pippo.brescia.com:7051"
+      },
+      { "mappedHost": "renzo.mantova.com",
+        "pattern": "(\\w*)renzo.mantova.com(\\w*)",
+        "sslTargetOverrideUrlSubstitutionExp": "renzo.mantova.com",
+        "urlSubstitutionExp": "renzo.mantova.com:7051"
+      }
+    ],
+  "certificateAuthorities": [
+      { "mappedHost": "ca1.parma.com",
+        "pattern": "(\\w*)ca1.parma.com(\\w*)",
+        "sslTargetOverrideUrlSubstitutionExp": "ca1.parma.com",
+        "urlSubstitutionExp": "ca1.parma.com:7054"
+      },
+      { "mappedHost": "ca1.brescia.com",
+        "pattern": "(\\w*)ca1.brescia.com(\\w*)",
+        "sslTargetOverrideUrlSubstitutionExp": "ca1.brescia.com",
+        "urlSubstitutionExp": "ca1.brescia.com:7054"
+      },
+      { "mappedHost": "ca1.mantova.com",
+        "pattern": "(\\w*)ca1.mantova.com(\\w*)",
+        "sslTargetOverrideUrlSubstitutionExp": "ca1.mantova.com",
+        "urlSubstitutionExp": "ca1.mantova.com:7054"
+      }
+    ]
+  }
+}
