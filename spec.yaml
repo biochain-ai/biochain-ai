@@ -5,15 +5,15 @@ fabric:
   - "ca1.mantova.com"
   peers:
   - "tizio.parma.com"
-  - "caio.parma.com"
+ # - "caio.parma.com"
   - "pippo.brescia.com"
-  - "pluto.brescia.com"
+ # - "pluto.brescia.com"
   - "renzo.mantova.com"
-  - "lucia.mantova.com"
+ # - "lucia.mantova.com"
   orderers:
   - "orderer1.example.com"
   - "orderer2.example.com"
-  - "orderer3.example.com"
+ # - "orderer3.example.com"
   settings:
     ca:
       FABRIC_LOGGING_SPEC: DEBUG

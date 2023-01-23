@@ -11,12 +11,20 @@ minifab up -o parma.com
 echo "------------------"
 echo "-- Copying code --"
 echo "------------------"
-cp -R ~/_uni/borsa/biochain-ai/privatedata/ ~/minifab/vars/chaincode/
+if [ "$HOME" == "/home/alessio" ]; then
+    cp -R ~/_uni/borsa/biochain-ai/privatedata/ ~/minifab/vars/chaincode/ ;
+else
+   cp -R ~/biochain-ai/privatedata/ ~/minifab/vars/chaincode/ ;
+fi
 
 echo "---------------------------------------"
 echo "-- Copying collections configuration --"
 echo "---------------------------------------"
-cp ~/_uni/borsa/biochain-ai/privatedata_collection_config.json ~/minifab/vars/
+if [ "$HOME" == "/home/alessio" ]; then
+    cp ~/_uni/borsa/biochain-ai/privatedata_collection_config.json ~/minifab/vars/
+else
+    cp ~/biochain-ai/privatedata_collection_config.json ~/minifab/vars
+fi
 
 echo "--------------------------"
 echo "-- Installing chaincode --"
