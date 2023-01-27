@@ -1,8 +1,7 @@
 // TODO
 // - add check on input data
 // - check request number, avoid empty request
-// - add somethig to not show all accepted sharing requests
-// - add a method to see all the sharing requests, even the already accepted
+// - add something to not show all accepted sharing requests
 
 package main
 
@@ -685,6 +684,23 @@ func (c *Chaincode) acceptRequest(stub shim.ChaincodeStubInterface, args []strin
 		return shim.Error("Error converting requestId from string to int64")
 	}
 
+	// Retrieve the request counter to know the max request number
+	requestCounterBytes, err := stub.GetState("REQUESTCOUNTER")
+	if err != nil {
+		return shim.Error("Error retrieving request counter")
+	}
+
+	var requestCounter int64
+	err = json.Unmarshal(requestCounterBytes, &requestCounter)
+	if err != nil {
+		return shim.Error("Error unmarshaling request counter")
+	}
+
+	// Check in the request Id is valid
+	if requestIdInput > requestCounter || requestIdInput <= 0 {
+		return shim.Error("Request ID out of range!")
+	}
+
 	// Retrieve the request
 	key := "REQUEST" + strconv.FormatInt(requestIdInput, 10)
 	requestBytes, err := stub.GetState(key)
@@ -762,6 +778,23 @@ func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string)
 	requestIdInput, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
 		return shim.Error("Error converting requestId from string to int64")
+	}
+
+	// Retrieve the request counter to know the max request number
+	requestCounterBytes, err := stub.GetState("REQUESTCOUNTER")
+	if err != nil {
+		return shim.Error("Error retrieving request counter")
+	}
+
+	var requestCounter int64
+	err = json.Unmarshal(requestCounterBytes, &requestCounter)
+	if err != nil {
+		return shim.Error("Error unmarshaling request counter")
+	}
+
+	// Check in the request Id is valid
+	if requestIdInput > requestCounter || requestIdInput <= 0 {
+		return shim.Error("Request ID out of range!")
 	}
 
 	// Retrieve the request
