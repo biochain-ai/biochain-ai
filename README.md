@@ -1,5 +1,5 @@
 # Biochain-AI
-Blockchain for private data
+This project allows to implement an Hyperledger blockchain that exploit private collection to share biological data between different organisations. This technology allows organisations to public bioilogical data into the ledger keeping it secret until one of the other organisations asks for it. The blockchain technology assures that all the transactions created are stored immutabily, granting accountability to every one of them. 
 
 ## Requirements
 What you need:
@@ -67,9 +67,9 @@ What you need:
 
 	`minifab approve,commit,initialize -p '' `
 
-### Install privatedata chaincode
- - Copy all the contents of the folder `privatedata` in `vars/chaincode`
- - Execute `minifab install -n privatedata -r true`
+### Install biosharing chaincode
+ - Copy all the contents of the folder `biosharing` in `vars/chaincode`
+ - Execute `minifab install -n biosharing -r true`
  - Copy `privatedata_collection_config.json` in the folder `vars/`
  - Execute `minifab approve,commit,initialize -p '' `
 ## Interact with the blockchain

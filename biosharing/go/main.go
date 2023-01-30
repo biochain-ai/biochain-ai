@@ -1,8 +1,3 @@
-// TODO
-// - add check on input data
-// - check request number, avoid empty request
-// - add something to not show all accepted sharing requests
-
 package main
 
 import (
@@ -421,7 +416,7 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 	return shim.Success([]byte(buffer.String()))
 }
 
-// viewSsecretData
+// viewSecretData
 // ==============
 // This method allows to see the secret data stored in the private collection
 func (c *Chaincode) viewSecretData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
