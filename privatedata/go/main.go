@@ -96,8 +96,8 @@ func (c *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return c.viewSecretData(stub, args)
 	case "requestData":
 		return c.requestData(stub, args)
-	case "viewSharingRequests":
-		return c.viewSharingRequests(stub, args)
+	case "viewPersonalSharingRequests":
+		return c.viewPersonalSharingRequests(stub, args)
 	case "acceptRequest":
 		return c.acceptRequest(stub, args)
 	case "denyRequest":
@@ -421,7 +421,7 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 	return shim.Success([]byte(buffer.String()))
 }
 
-// viewSecretData
+// viewSsecretData
 // ==============
 // This method allows to see the secret data stored in the private collection
 func (c *Chaincode) viewSecretData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -557,10 +557,11 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 	return shim.Success(nil)
 }
 
-// viewSharingRequests
+// viewPersonalSharingRequests
 // ===================
-// This method allows to see all the requests of data sharing
-func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+// This method allows to see all the requests of data sharing belonging to the
+// caller
+func (c *Chaincode) viewPersonalSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 0 {
 		return shim.Error("Incorrect number of parameters. Expected 0.")
 	}
@@ -616,7 +617,7 @@ func (c *Chaincode) viewSharingRequests(stub shim.ChaincodeStubInterface, args [
 	}
 	buffer.WriteString("]")
 
-	fmt.Printf("- viewSharingRequests Result:\n%s\n", buffer.String())
+	fmt.Printf("- viewPersonalSharingRequests Result:\n%s\n", buffer.String())
 
 	return shim.Success([]byte(buffer.String()))
 }
