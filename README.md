@@ -61,7 +61,7 @@ What you need:
 
 	`minifab install -n chaincodeName -r true`
 
- 	- A file called `chaincodeName_collection_config.json` will be creted. This files describe the features of the private collection that will be created. This file must be modified in order to obtain the desired configuration. In our case, we will replace this file with the file `privatedata_collection_config.json`
+ 	- A file called `chaincodeName_collection_config.json` will be creted. This files describe the features of the private collection that will be created. This file must be modified in order to obtain the desired configuration. In our case, we will replace this file with the file `biosharing_collection_config.json`
 
  - To commit the chaincode execute the following command
 
@@ -70,7 +70,7 @@ What you need:
 ### Install biosharing chaincode
  - Copy all the contents of the folder `biosharing` in `vars/chaincode`
  - Execute `minifab install -n biosharing -r true`
- - Copy `privatedata_collection_config.json` in the folder `vars/`
+ - Copy `biosharing_collection_config.json` in the folder `vars/`
  - Execute `minifab approve,commit,initialize -p '' `
 ## Interact with the blockchain
 To change the organization that performs the transaction, the name after the `-o` flag must be changed. In `spec.yaml` file are listed all the organizations
