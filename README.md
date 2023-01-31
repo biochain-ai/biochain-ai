@@ -78,11 +78,11 @@ To change the organization that performs the transaction, the name after the `-o
 This calls depends on the methods in the blockchain
 #### View all the public data
 
-`minifab invoke -p '"viewAllData"' -o parma.com`
+`minifab invoke -p '"viewCatalogue"' -o parma.com`
 
 #### View all the personal private data
 
-`minifab invoke -p '"viewSecretData"' -o parma.com`
+`minifab invoke -p '"getPrivateData"' -o parma.com`
 
 #### View the personal public data
 
@@ -101,7 +101,7 @@ The second argument must be the name of the data
 
 #### View Personal sharing requests
 
-`minifab invoke -p '"viewSharingRequests"' -o parma.com`
+`minifab invoke -p '"viewRequests"' -o parma.com`
 
 #### Accept sharing request
 The second argument is the number of the request. This number can be seen in the request

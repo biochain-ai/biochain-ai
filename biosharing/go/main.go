@@ -83,16 +83,16 @@ func (c *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return c.insertData(stub, args)
 	case "removeData":
 		return c.removeData(stub, args)
-	case "viewAllData":
-		return c.viewAllData(stub, args)
+	case "viewCatalogue":
+		return c.viewCatalogue(stub, args)
 	case "viewPersonalData":
 		return c.viewPersonalData(stub, args)
-	case "viewSecretData":
-		return c.viewSecretData(stub, args)
+	case "getPrivateData":
+		return c.getPrivateData(stub, args)
 	case "requestData":
 		return c.requestData(stub, args)
-	case "viewPersonalSharingRequests":
-		return c.viewPersonalSharingRequests(stub, args)
+	case "viewRequests":
+		return c.viewRequests(stub, args)
 	case "acceptRequest":
 		return c.acceptRequest(stub, args)
 	case "denyRequest":
@@ -109,7 +109,7 @@ func (c *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 // ==========
 // Gives a set of transient data, this methods insert in the ledger the pair
 // <name> - <name,descritpion,owner> and in the private collection the pair
-// <name> - <data>
+// <name> - <data>.
 func (c *Chaincode) insertData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	fmt.Println("- start insertData")
 
@@ -299,10 +299,10 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 	return shim.Success(nil)
 }
 
-// viewAllData
-// ===========
-// This method returns all the key-value pairs in the ledger
-func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+// viewCatalogue
+// =============
+// This method returns all the data units stored in the public ledger.
+func (c *Chaincode) viewCatalogue(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	// Check the number of arguements
 	if len(args) != 0 {
@@ -344,14 +344,15 @@ func (c *Chaincode) viewAllData(stub shim.ChaincodeStubInterface, args []string)
 	}
 	buffer.WriteString("]")
 
-	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
+	fmt.Printf("- viewCatalogue Result:\n%s\n", buffer.String())
 
 	return shim.Success([]byte(buffer.String()))
 }
 
 // viewPersonalData
 // ================
-// This method allows to view all the personal data inserted
+// This method allows to view all the personal data inserted into the public
+// ledger.
 func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	// Check the number of arguements
@@ -411,15 +412,15 @@ func (c *Chaincode) viewPersonalData(stub shim.ChaincodeStubInterface, args []st
 	}
 	buffer.WriteString("]")
 
-	fmt.Printf("- viewAllData Result:\n%s\n", buffer.String())
+	fmt.Printf("- viewPersonalData Result:\n%s\n", buffer.String())
 
 	return shim.Success([]byte(buffer.String()))
 }
 
-// viewSecretData
+// getPrivateData
 // ==============
-// This method allows to see the secret data stored in the private collection
-func (c *Chaincode) viewSecretData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+// This method allows to see the secret data stored in the private collection.
+func (c *Chaincode) getPrivateData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	collectionName := getCollectionName(stub)
 	fmt.Println("Collection name: " + collectionName)
@@ -458,7 +459,7 @@ func (c *Chaincode) viewSecretData(stub shim.ChaincodeStubInterface, args []stri
 	}
 	buffer.WriteString("]")
 
-	fmt.Printf("- viewSecretData Result:\n%s\n", buffer.String())
+	fmt.Printf("- getPrivateData Result:\n%s\n", buffer.String())
 
 	// CANNOT PRINT THE BUFFER, GIVES ERROR
 	return shim.Success(nil)
@@ -552,11 +553,11 @@ func (c *Chaincode) requestData(stub shim.ChaincodeStubInterface, args []string)
 	return shim.Success(nil)
 }
 
-// viewPersonalSharingRequests
-// ===================
+// viewRequests
+// ============
 // This method allows to see all the requests of data sharing belonging to the
-// caller
-func (c *Chaincode) viewPersonalSharingRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+// caller.
+func (c *Chaincode) viewRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 0 {
 		return shim.Error("Incorrect number of parameters. Expected 0.")
 	}
@@ -612,14 +613,14 @@ func (c *Chaincode) viewPersonalSharingRequests(stub shim.ChaincodeStubInterface
 	}
 	buffer.WriteString("]")
 
-	fmt.Printf("- viewPersonalSharingRequests Result:\n%s\n", buffer.String())
+	fmt.Printf("- viewRequests Result:\n%s\n", buffer.String())
 
 	return shim.Success([]byte(buffer.String()))
 }
 
 // viewAllRequests
 // ===============
-// This function allows to see all the sharing requests present in the ledger
+// This function allows to see all the sharing requests present in the ledger.
 func (c *Chaincode) viewAllRequests(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	// Perform the range query for the requests
@@ -668,6 +669,9 @@ func (c *Chaincode) viewAllRequests(stub shim.ChaincodeStubInterface, args []str
 
 // acceptRequest
 // =============
+// This method allow the user to accept a request of data sharing. Given a
+// requestId this methods puts the request from Pending to Accepted and copy the
+// secret data from a private collection to the other.
 func (c *Chaincode) acceptRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	if len(args) != 1 {
@@ -762,7 +766,7 @@ func (c *Chaincode) acceptRequest(stub shim.ChaincodeStubInterface, args []strin
 
 // denyRequest
 // ===========
-// This method allow the user to deny a request of data sharing. Giver a
+// This method allow the user to deny a request of data sharing. Given a
 // requestId this methods puts the request from Pending to Rejected.
 func (c *Chaincode) denyRequest(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
