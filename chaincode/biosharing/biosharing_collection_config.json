@@ -1,0 +1,26 @@
+[
+    {
+       "name": "ParmaMSPPrivateCollection",
+       "policy": "OR( 'ParmaMSP.member' )",
+       "requiredPeerCount": 0,
+       "maxPeerCount": 1,
+       "blockToLive":30000,
+       "memberOnlyRead": true,
+       "memberOnlyWrite": false,
+       "endorsementPolicy": {
+       "signaturePolicy": "OR( 'ParmaMSP.member' )"
+       }
+    },
+    {
+       "name": "BresciaMSPPrivateCollection",
+       "policy": "OR( 'BresciaMSP.member' )",
+       "requiredPeerCount": 0,
+       "maxPeerCount": 1,
+       "blockToLive":30000,
+       "memberOnlyRead": true, 
+       "memberOnlyWrite": false,
+       "endorsementPolicy": {
+           "signaturePolicy": "OR( 'BresciaMSP.member' )"
+       }
+    }
+]

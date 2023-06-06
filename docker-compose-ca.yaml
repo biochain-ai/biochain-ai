@@ -1,0 +1,67 @@
+version: '2'
+
+networks:
+    fabric-network:
+services:
+  ca.brescia.com:
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=tls/cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=tls/key.pem
+      - FABRIC_CA_SERVER_PORT=7055
+      - FABRIC_CA_SERVER_CA_NAME=ca.brescia.com
+      - FABRIC_CA_SERVER_CSR_CN=ca.brescia.com
+      - FABRIC_CA_SERVER_CSR_HOSTS=localhost
+    ports:
+      - 7055:7055
+    command: sh -c 'fabric-ca-server start -b admin:adminpw'
+    #command: tail -f /dev/null
+    volumes:
+      - ./fabric-ca/brescia.com/ca:/etc/hyperledger/fabric-ca-server
+    container_name: ca.brescia.com
+    networks:
+      - fabric-network
+
+  ca.parma.com:
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_TLS_ENABLED=true  
+      - FABRIC_CA_SERVER_TLS_CERTFILE=tls/cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=tls/key.pem          
+      - FABRIC_CA_SERVER_PORT=8055
+      - FABRIC_CA_SERVER_CA_NAME=ca.parma.com
+      - FABRIC_CA_SERVER_CSR_CN=ca.parma.com
+      - FABRIC_CA_SERVER_CSR_HOSTS=localhost
+    ports:
+      - 8055:8055
+    command: sh -c 'fabric-ca-server start -b admin:adminpw'
+    #command: tail -f /dev/null
+    volumes:
+      - ./fabric-ca/parma.com/ca:/etc/hyperledger/fabric-ca-server
+    container_name: ca.parma.com
+    networks:
+      - fabric-network
+
+  ca.orderer.example.com:
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_TLS_ENABLED=true            
+      - FABRIC_CA_SERVER_TLS_CERTFILE=tls/cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=tls/key.pem          
+      - FABRIC_CA_SERVER_PORT=9055
+      - FABRIC_CA_SERVER_CA_NAME=ca.orderer.example.com
+      - FABRIC_CA_SERVER_CSR_CN=ca.orderer.example.com
+      - FABRIC_CA_SERVER_CSR_HOSTS=localhost
+    ports:
+      - 9055:9055
+    command: sh -c 'fabric-ca-server start -b admin:adminpw'
+    #command: tail -f /dev/null
+    volumes:
+      - ./fabric-ca/orderer.example.com/ca:/etc/hyperledger/fabric-ca-server
+    container_name: ca.orderer.example.com
+    networks:
+      - fabric-network

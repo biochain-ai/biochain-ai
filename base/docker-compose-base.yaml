@@ -1,0 +1,97 @@
+version: '2'
+
+services:
+  orderer.example.com:
+    container_name: orderer.example.com
+    image: hyperledger/fabric-orderer:2.4
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # enabled TLS
+      - FABRIC_CFG_PATH=/etc/hyperledger/fabric/
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7049
+      - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      #- ORDERER_OPERATIONS_LISTENADDRESS=orderer.example.com:9443
+      #- ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      #- ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      #- ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      
+      
+      #- ORDERER_METRICS_PROVIDER=prometheus
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes:
+        - ../channel-artifacts/genesis.block:/etc/hyperledger/fabric/genesisblock
+        - ../crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/var/hyperledger/orderer/msp
+        - ../crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls:/var/hyperledger/orderer/tls
+        #- orderer.example.com:/var/hyperledger/production/orderer
+    ports:
+      - 7050:7050
+      - 7049:7049
+
+  peer0.brescia.com:
+      container_name: peer0.brescia.com
+      extends:
+        file: peer-base.yaml
+        service: peer-base
+      environment:
+        - CORE_PEER_ID=peer0.brescia.com
+        - CORE_PEER_ADDRESS=peer0.brescia.com:7051
+        #- CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+        - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.brescia.com:7051
+        - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.brescia.com:7051
+        - CORE_PEER_LOCALMSPID=BresciaMSP
+        - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+        #- CORE_PEER_TLS_ENABLED=true
+        #- CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+        #- CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+        #- CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.key
+      volumes:
+          - /var/run/:/host/var/run/
+          - ../crypto-config/peerOrganizations/brescia.com/peers/peer0.brescia.com/msp:/etc/hyperledger/fabric/msp
+          - ../crypto-config/peerOrganizations/brescia.com/peers/peer0.brescia.com/tls:/etc/hyperledger/fabric/tls
+          #- ../crypto-config/ordererOrganizations/orderer.example.com/msp/tlscacerts/:/etc/hyperledger/orderertls
+      ports:
+        - 7051:7051
+        - 7053:7053
+
+  peer0.parma.com:
+      container_name: peer0.parma.com
+      extends:
+        file: peer-base.yaml
+        service: peer-base
+      environment:
+        - CORE_PEER_ID=peer0.parma.com
+        - CORE_PEER_ADDRESS=peer0.parma.com:7051
+        #- CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+        - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.parma.com:7051
+        - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.parma.com:7051
+        - CORE_PEER_LOCALMSPID=ParmaMSP
+        - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+        #- CORE_PEER_TLS_ENABLED=true
+        #- CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+        #- CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+        #- CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.key
+      volumes:
+          - /var/run/:/host/var/run/
+          - ../crypto-config/peerOrganizations/parma.com/peers/peer0.parma.com/msp:/etc/hyperledger/fabric/msp
+          - ../crypto-config/peerOrganizations/parma.com/peers/peer0.parma.com/tls:/etc/hyperledger/fabric/tls
+          #- ../crypto-config/ordererOrganizations/orderer.example.com/msp/tlscacerts/:/etc/hyperledger/orderertls
+
+      ports:
+        - 8051:7051
+        - 8053:7053

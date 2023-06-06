@@ -1,0 +1,164 @@
+Organizations:
+    - &OrdererOrg
+        Name: OrdererOrg
+        ID: OrdererMSP
+        MSPDir: crypto-config/ordererOrganizations/example.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('OrdererMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('OrdererMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('OrdererMSP.admin')"
+        OrdererEndpoints:
+            - orderer.example.com:7050
+
+    - &Brescia
+        Name: BresciaMSP
+        ID: BresciaMSP
+        MSPDir: crypto-config/peerOrganizations/brescia.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('BresciaMSP.admin', 'BresciaMSP.peer', 'BresciaMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('BresciaMSP.admin', 'BresciaMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('BresciaMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('BresciaMSP.peer')"
+        AnchorPeers:
+            - Host: peer0.brescia.com
+              Port: 7051
+
+    - &Parma
+        Name: ParmaMSP
+        ID: ParmaMSP
+        MSPDir: crypto-config/peerOrganizations/parma.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('ParmaMSP.admin', 'ParmaMSP.peer', 'ParmaMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('ParmaMSP.admin', 'ParmaMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('ParmaMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('ParmaMSP.peer')"
+        AnchorPeers:
+            - Host: peer0.parma.com
+              Port: 7051
+
+Capabilities:
+    Channel: &ChannelCapabilities
+        V2_0: true
+    Orderer: &OrdererCapabilities
+        V2_0: true
+    Application: &ApplicationCapabilities
+        V2_0: true
+
+Application: &ApplicationDefaults
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+    Capabilities:
+        <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+    OrdererType: etcdraft
+    EtcdRaft:
+        Consenters:
+        - Host: orderer.example.com
+          Port: 7050
+          ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+          ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+        Options:
+            TickInterval: 2500ms
+            ElectionTick: 5
+            HeartbeatTick: 1
+            MaxInflightBlocks: 5
+            SnapshotIntervalSize: 16 MB
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+    Policies: 
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+    Capabilities:
+        <<: *ChannelCapabilities
+
+Profiles:
+    TwoOrgsOrdererGenesis:
+        <<: *ChannelDefaults
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Parma
+                - *Brescia
+            Capabilities:
+                <<: *ApplicationCapabilities
+
+    TwoOrgsChannel:
+        Consortium: SampleConsortium
+        <<: *ChannelDefaults
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Parma
+                - *Brescia
+            Capabilities:
+                <<: *ApplicationCapabilities
