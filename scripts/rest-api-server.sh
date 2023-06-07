@@ -9,7 +9,9 @@ function startRestServer() {
     cp -r crypto-config ./rest-api-go/go/
 
     docker build --tag rest-api-go ./rest-api-go/go/.
-    docker run -d --net hyperledger-custom-network_fabric-network -p 3000:3000 --name rest-api-go rest-api-go 
+    #docker run -d --net hyperledger-custom-network_fabric-network -p 3000:3000 --name rest-api-go rest-api-go 
+    docker run -d --net biochain-ai_fabric-network -p 3000:3000 --name rest-api-go rest-api-go 
+
 }
 
 # Kills and run a new web server
@@ -25,5 +27,6 @@ function restartRestServer (){
     cp -r crypto-config ./rest-api-go/go/
 
     docker build --tag rest-api-go ./rest-api-go/go/.
-    docker run -d --net hyperledger-custom-network_fabric-network -p 3000:3000 --name rest-api-go rest-api-go
+    #docker run -d --net hyperledger-custom-network_fabric-network -p 3000:3000 --name rest-api-go rest-api-go
+    docker run -d --net biochain-ai_fabric-network -p 3000:3000 --name rest-api-go rest-api-go
 }
