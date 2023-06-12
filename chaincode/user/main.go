@@ -116,12 +116,20 @@ func (c *Chaincode_User) addUser(stub shim.ChaincodeStubInterface, args []string
 		return shim.Error("'CommonName' field must be a non-empty string.")
 	}
 
-	// TODO: check existence of user
+	// Check user existence (must miss)
 	dataByte, err := stub.GetState("USER" + dataInput.Mail)
 	if err != nil {
 		return shim.Error("Failed to get data from the ledger " + err.Error())
 	} else if dataByte != nil {
 		return shim.Error("User " + dataInput.Mail + " found. Cannot add it twice!")
+	}
+
+	// Check org existence (must exist)
+	orgByte, err := stub.GetState("ORG" + dataInput.Org)
+	if err != nil {
+		return shim.Error("Failed to get data from the ledger " + err.Error())
+	} else if orgByte == nil {
+		return shim.Error("Org " + dataInput.Org + " not found. User cannot be add with unknown organization.")
 	}
 
 	// Marshall the data to be inserted into the ledger
@@ -179,7 +187,7 @@ func (c *Chaincode_User) checkExistence(stub shim.ChaincodeStubInterface, args [
 		return shim.Success(nil)
 	} else {
 		var retrievedUser user
-		err = json.Unmarshal(dataByte, retrievedUser)
+		err = json.Unmarshal(dataByte, &retrievedUser)
 		if err != nil {
 			return shim.Error("Error during data unmarshal.")
 		}
@@ -341,7 +349,7 @@ func (c *Chaincode_User) removeOrg(stub shim.ChaincodeStubInterface, args []stri
 	}
 
 	if orgBytes == nil {
-		return shim.Error(key + " does not exist. Cannot be remove.")
+		return shim.Error(key + " does not exist. Cannot be removed.")
 	}
 
 	// Remove the organization from the ledger

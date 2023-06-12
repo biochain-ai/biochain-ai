@@ -14,6 +14,7 @@ RUN go mod download
 COPY *.go ./
 COPY /static ./static
 COPY /templates ./templates
+COPY *.html ./
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -o /web-server
