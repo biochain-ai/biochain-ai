@@ -10,8 +10,8 @@ export PATH=$PATH:~/go/src/github.com/jokerale/fabric-samples/bin
 function removePreviousExecution() {
     infoln "Removing previous execution"
     # Remove web server
-    docker stop web-server-go
-    docker rm web-server-go
+    docker stop web-server-php
+    docker rm web-server-php
 
     # Remove rest api server
     docker stop rest-api-go
