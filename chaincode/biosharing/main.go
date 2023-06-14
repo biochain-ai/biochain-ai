@@ -37,6 +37,7 @@ const (
 	Pending  status = iota
 	Accepted status = iota
 	Rejected status = iota
+	Revoked  status = iota
 )
 
 // Asset used to track the data requests and their status
@@ -287,6 +288,47 @@ func (c *Chaincode) removeData(stub shim.ChaincodeStubInterface, args []string) 
 
 	if owner_split[1] != creatorMSPID {
 		return shim.Error("Deletion not allowed. Different organizations!")
+	}
+
+	// Label all the pending request to the data as "REVOKED"
+	var requestElement assetRequest
+	resultIteratorRequests, err := stub.GetStateByRange("REQUEST", "")
+	if err != nil {
+		return shim.Error("Error during range query. " + err.Error())
+	}
+	defer resultIteratorRequests.Close()
+
+	for resultIteratorRequests.HasNext() {
+		queryResponse, err := resultIteratorRequests.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		if strings.Contains(queryResponse.Key, "REQUEST") &&
+			!strings.Contains(queryResponse.Key, "COUNTER") {
+			// Unmarshal the incoming data
+			err = json.Unmarshal(queryResponse.Value, &requestElement)
+			if err != nil {
+				return shim.Error("Error unmashaling data from response.")
+			}
+
+			requestElementName := strings.TrimPrefix(removeDataInput.Name, "DATA")
+			queryResponseName := strings.TrimPrefix(queryResponse.Key, "REQUEST")
+
+			if requestElementName == queryResponseName {
+				requestElement.Status = Revoked
+
+				requestElementJSON, err := json.Marshal(requestElement)
+				if err != nil {
+					return shim.Error("Error during data marshal!")
+				}
+
+				err = stub.PutState(queryResponse.Key, requestElementJSON)
+				if err != nil {
+					shim.Error("Error during PutState of the request")
+				}
+			}
+		}
 	}
 
 	// Delete public state
