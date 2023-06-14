@@ -57,33 +57,64 @@ type sharingElement struct {
 	Record sharingRequest
 }
 
+// Active User type
+type ActiveUser struct {
+	email string
+	token string
+	org   string
+}
+
+type Org struct {
+	org  string
+	msp  string
+	port string
+}
+
+// List of all the active users
+var activeUserList []ActiveUser
+
+// List of all the organizations
+var orgsList []Org
+
 // Serve starts http web server.
 func Serve() {
-	http.HandleFunc("/bootstrap", setups.Bootstrap)
+	// Populate orgs informations
+	// TODO: add this informations into a conf file and read the file
+	orgsList = append(orgsList, Org{org: "parma", msp: "ParmaMSP", port: "8051"})
+	orgsList = append(orgsList, Org{org: "brescia", msp: "BresciaMSP", port: "7051"})
+
+	// Populate activeUserList
+	activeUserList = append(activeUserList, ActiveUser{token: "", email: "", org: ""})
+
+	// http.HandleFunc("/bootstrap", setups.Bootstrap)
 	// http.HandleFunc("/query", setups.Query)
 	// http.HandleFunc("/invoke", setups.Invoke)
 	// http.HandleFunc("/transient", setups.Transient)
 	// http.HandleFunc("/test", setups.Test)
 
+	// Used to record tokens and users
+	http.HandleFunc("/addToken", addToken)
+	http.HandleFunc("/removeToken", removeToken)
+
 	//// Chaincode BIOCHAIN
 	// Rest resourses that match the chaincode method
-	http.HandleFunc("/insertData", setups.InsertData)
-	http.HandleFunc("/removeData", setups.RemoveData)
-	http.HandleFunc("/getPrivateData", setups.GetPrivateData)
-	http.HandleFunc("/requestData", setups.RequestData)
+	http.HandleFunc("/insertData", InsertData)
+	http.HandleFunc("/removeData", RemoveData)
+	http.HandleFunc("/getPrivateData", GetPrivateData)
+	http.HandleFunc("/requestData", RequestData)
 
 	// Rest resources that does not match with the chaincode mathods
-	http.HandleFunc("/view", setups.View)
-	http.HandleFunc("/managerequest", setups.ManageRequest)
+	http.HandleFunc("/view", View)
+	http.HandleFunc("/managerequest", ManageRequest)
 
 	//// Chaincode USER
-	http.HandleFunc("/addUser", setups.addUser)
-	http.HandleFunc("/removeUser", setups.removeUser)
-	http.HandleFunc("/checkExistence", setups.checkExistence)
-	http.HandleFunc("/viewAllUsers", setups.viewAllUsers)
-	http.HandleFunc("/setOrgLevel", setups.setOrgLevel)
-	http.HandleFunc("/createOrg", setups.createOrg)
-	http.HandleFunc("/removeOrg", setups.removeOrg)
+	http.HandleFunc("/addUser", addUser)
+	http.HandleFunc("/removeUser", removeUser)
+	http.HandleFunc("/checkExistence", checkExistence)
+	http.HandleFunc("/viewAllUsers", viewAllUsers)
+	http.HandleFunc("/setOrgLevel", setOrgLevel)
+	http.HandleFunc("/createOrg", createOrg)
+	http.HandleFunc("/removeOrg", removeOrg)
 
 	fmt.Println("Listening (http://localhost:3000/)...")
 	if err := http.ListenAndServe(":3000", nil); err != nil {
@@ -91,8 +122,29 @@ func Serve() {
 	}
 }
 
+// Add a user.token pair to the active user list
+func addToken(w http.ResponseWriter, r *http.Request) {
+	setupCorsResponse(&w, r)
+
+	// Retrieve request elements
+	queryParams := r.URL.Query()
+	email := queryParams.Get("email")
+	token := queryParams.Get("token")
+
+	// TODO: Check if user exists
+	checkExistence_utils(email, token)
+
+	// Add user to the active user list
+	activeUserList = append(activeUserList, ActiveUser{email: email, token: token, org: ""})
+}
+
+// Remove user from the active user list
+func removeToken(w http.ResponseWriter, r *http.Request) {
+
+}
+
 // Calls the methods "accept/deny" request
-func (setup *OrgSetup) ManageRequest(w http.ResponseWriter, r *http.Request) {
+func ManageRequest(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request to accept/deny a sharing request")
 
 	setupCorsResponse(&w, r)
@@ -102,6 +154,9 @@ func (setup *OrgSetup) ManageRequest(w http.ResponseWriter, r *http.Request) {
 	channelID := "channel1"
 	method := queryParams.Get("method")
 	dataid := queryParams.Get("id")
+	token := queryParams.Get("token")
+
+	checkTokenAndBootstrap(token, w)
 
 	var function string
 	var requesterMSPID string
@@ -169,10 +224,15 @@ func (setup *OrgSetup) ManageRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the chaincode method 'insertData'
-func (setup *OrgSetup) InsertData(w http.ResponseWriter, r *http.Request) {
+func InsertData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for insertData")
 
 	setupCorsResponse(&w, r)
+
+	queryParams := r.URL.Query()
+	token := queryParams.Get("token")
+
+	checkTokenAndBootstrap(token, w)
 
 	// Read the body of the request
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -208,10 +268,15 @@ func (setup *OrgSetup) InsertData(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the chaincode method 'removeData'
-func (setup *OrgSetup) RemoveData(w http.ResponseWriter, r *http.Request) {
+func RemoveData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Receiving request for removeData")
 
 	setupCorsResponse(&w, r)
+
+	queryParams := r.URL.Query()
+	token := queryParams.Get("token")
+
+	checkTokenAndBootstrap(token, w)
 
 	// Read the body of the request
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -246,18 +311,23 @@ func (setup *OrgSetup) RemoveData(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the 'getPrivateData' method
-func (setup *OrgSetup) GetPrivateData(w http.ResponseWriter, r *http.Request) {
+func GetPrivateData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for getPrivateData")
 
 	setupCorsResponse(&w, r)
 
 	// Set parameters
+	queryParams := r.URL.Query()
 	chaincodeid := "biosharing"
 	channelID := "channel1"
 	function := "getPrivateData"
 	fmt.Printf("	channel: %s, chaincode: %s, function: %s,\n", channelID, chaincodeid, function)
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chaincodeid)
+
+	token := queryParams.Get("token")
+
+	checkTokenAndBootstrap(token, w)
 
 	// Select the function to query
 	fmt.Println("Calling " + function)
@@ -273,7 +343,7 @@ func (setup *OrgSetup) GetPrivateData(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the 'requestData' method
-func (setup *OrgSetup) RequestData(w http.ResponseWriter, r *http.Request) {
+func RequestData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for requestData")
 
 	setupCorsResponse(&w, r)
@@ -289,6 +359,10 @@ func (setup *OrgSetup) RequestData(w http.ResponseWriter, r *http.Request) {
 
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
+
+	token := queryParams.Get("token")
+
+	checkTokenAndBootstrap(token, w)
 
 	// Call the method using the received data
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
@@ -308,11 +382,10 @@ func (setup *OrgSetup) RequestData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
-
 }
 
 // Calls the 'view' methods
-func (setup *OrgSetup) View(w http.ResponseWriter, r *http.Request) {
+func View(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for view")
 
 	setupCorsResponse(&w, r)
@@ -322,9 +395,16 @@ func (setup *OrgSetup) View(w http.ResponseWriter, r *http.Request) {
 	chaincodeid := "biosharing"
 	channelID := "channel1"
 	function := queryParams.Get("function")
-	fmt.Printf("	channel: %s, chaincode: %s, function: %s,\n", channelID, chaincodeid, function)
+	token := queryParams.Get("token")
+
+	fmt.Printf("Channel: %s, chaincode: %s, function: %s, token: %s\n", channelID, chaincodeid, function, token)
+
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chaincodeid)
+
+	// Check if the token is valid and bootstrap the connection settings
+	// otherwise return with error
+	checkTokenAndBootstrap(token, w)
 
 	// To lower the function name
 	function = strings.ToLower(function)
@@ -381,15 +461,15 @@ func (setup *OrgSetup) View(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("End view function")
 }
 
-func (setup OrgSetup) Bootstrap(w http.ResponseWriter, r *http.Request) {
+func (setup *OrgSetup) Bootstrap(org string, msp string, port string) {
 	fmt.Println("Bootstrap")
 
-	setupCorsResponse(&w, r)
+	// setupCorsResponse(&w, r)
 
-	queryParams := r.URL.Query()
-	org := queryParams.Get("org")
-	msp := queryParams.Get("msp")
-	port := queryParams.Get("port")
+	// queryParams := r.URL.Query()
+	// org := queryParams.Get("org")
+	// msp := queryParams.Get("msp")
+	// port := queryParams.Get("port")
 
 	//Initialize setup for Org1
 	// This settings now depend on the docker container and network settings.
@@ -415,7 +495,7 @@ func (setup OrgSetup) Bootstrap(w http.ResponseWriter, r *http.Request) {
 }
 
 // Initialize the setup for the organization.
-func (setup OrgSetup) Initialize() error {
+func (setup *OrgSetup) Initialize() error {
 	log.Printf("Initializing connection for %s...\n", setups.OrgName)
 	clientConnection := setups.newGrpcConnection()
 	id := setups.newIdentity()
@@ -441,7 +521,7 @@ func (setup OrgSetup) Initialize() error {
 }
 
 // // Chaincode USER
-func (setup *OrgSetup) addUser(w http.ResponseWriter, r *http.Request) {
+func addUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for addUser")
 
 	setupCorsResponse(&w, r)
@@ -479,11 +559,11 @@ func (setup *OrgSetup) addUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Result: " + string(result))
 }
 
-func (setup *OrgSetup) removeUser(w http.ResponseWriter, r *http.Request) {
+func removeUser(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
 
-func (setup *OrgSetup) checkExistence(w http.ResponseWriter, r *http.Request) {
+func checkExistence(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for checkExistence")
 
 	setupCorsResponse(&w, r)
@@ -518,10 +598,10 @@ func (setup *OrgSetup) checkExistence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
-
+	return
 }
 
-func (setup *OrgSetup) viewAllUsers(w http.ResponseWriter, r *http.Request) {
+func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for viewAllUsers")
 
 	setupCorsResponse(&w, r)
@@ -545,12 +625,12 @@ func (setup *OrgSetup) viewAllUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Response: %s", evaluateResponse)
 }
 
-func (setup *OrgSetup) setOrgLevel(w http.ResponseWriter, r *http.Request) {
+func setOrgLevel(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
 
 // Calls the 'createOrg' method
-func (setup *OrgSetup) createOrg(w http.ResponseWriter, r *http.Request) {
+func createOrg(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for createOrg")
 
 	setupCorsResponse(&w, r)
@@ -588,7 +668,7 @@ func (setup *OrgSetup) createOrg(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the 'removeOrg' method
-func (setup *OrgSetup) removeOrg(w http.ResponseWriter, r *http.Request) {
+func removeOrg(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for removeOrg")
 
 	setupCorsResponse(&w, r)
@@ -700,4 +780,44 @@ func setupCorsResponse(w *http.ResponseWriter, r *http.Request) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
+}
+
+// # checkExistence_utils
+//
+// Check if a user is present into the ledger
+func checkExistence_utils(email string, token string) (ret int) {
+	return 0
+}
+
+// # checkToken
+//
+// Return true if the token is present in the active list user
+func checkToken(token string) (r bool) {
+	for _, u := range activeUserList {
+		if u.token == token {
+			return true
+		}
+	}
+	return false
+}
+
+// # checkTokenandBootstrap
+//
+// Checks if the token is valid and sets the configuration info
+func checkTokenAndBootstrap(token string, w http.ResponseWriter) {
+	// Check if the token is valid nd bootstrap the connection settings
+	if !checkToken(token) {
+		fmt.Fprintf(w, "Error: User not allowed!")
+		return
+	} else {
+		for _, u := range activeUserList {
+			if u.token == token {
+				for _, o := range orgsList {
+					if u.org == o.org {
+						setups.Bootstrap(o.org, o.msp, o.port)
+					}
+				}
+			}
+		}
+	}
 }
