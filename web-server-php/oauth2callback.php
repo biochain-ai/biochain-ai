@@ -30,6 +30,64 @@ if(isset($_GET["code"])){
         //Get user profile data from google
         $data = $google_service->userinfo->get();
         //Below you can find Get profile data and store into $_SESSION variable
+
+        // Send token to the Rest Api
+        // $request = curl_init();
+
+        // curl_setopt($request, CURLOPT_URL,"http://localhost:3000/addToken");
+        // curl_setopt($request, CURLOPT_POST, 1);
+        // curl_setopt($request, CURLOPT_POSTFIELDS, 
+        //          http_build_query(array('email' => $data['email'], 'token' => $token['access_token'])));
+
+        // // catch the response
+        // curl_setopt($request, CURLOPT_RETURNTRANSFER, 1);
+        // curl_setopt($request, CURLOPT_SSL_VERIFYPEER, 0);
+        // curl_setopt($request, CURLOPT_SSL_VERIFYHOST, 0);
+
+        // $response = curl_exec($request);
+
+        // curl_close ($request);
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'http://rest-api-go:3000/addToken',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS =>'{
+            "email": "'.$data['email'].'",
+            "token": "'.$token['access_token'].'"
+        }',
+        CURLOPT_HTTPHEADER => array(
+            'Content-Type: application/json'
+        ),
+        ));
+
+        $response = curl_exec($curl);
+
+        echo $response;
+
+        if(curl_errno($curl)){
+            echo 'Curl error: ' . curl_error($curl);
+        }
+
+        curl_close($curl);
+
+        // // GET REQUEST
+        // $curlSES=curl_init(); 
+        // curl_setopt($curlSES,CURLOPT_URL,"http://localhost:3000/addToken?email=".$data['email']."&token=".$token['access_token']);
+        // curl_setopt($curlSES,CURLOPT_RETURNTRANSFER, true);
+        // $result=curl_exec($curlSES);
+        // curl_close($curlSES);
+        // echo $result;
+
+
         if(!empty($data['given_name'])){
             $_SESSION['user_first_name'] = $data['given_name'];
         }

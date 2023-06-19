@@ -80,11 +80,11 @@ var orgsList []Org
 func Serve() {
 	// Populate orgs informations
 	// TODO: add this informations into a conf file and read the file
-	orgsList = append(orgsList, Org{org: "parma", msp: "ParmaMSP", port: "8051"})
+	orgsList = append(orgsList, Org{org: "parma", msp: "ParmaMSP", port: "7051"})
 	orgsList = append(orgsList, Org{org: "brescia", msp: "BresciaMSP", port: "7051"})
 
 	// Populate activeUserList
-	activeUserList = append(activeUserList, ActiveUser{token: "", email: "", org: ""})
+	// activeUserList = append(activeUserList, ActiveUser{token: "", email: "", org: ""})
 
 	// http.HandleFunc("/bootstrap", setups.Bootstrap)
 	// http.HandleFunc("/query", setups.Query)
@@ -95,6 +95,7 @@ func Serve() {
 	// Used to record tokens and users
 	http.HandleFunc("/addToken", addToken)
 	http.HandleFunc("/removeToken", removeToken)
+	http.HandleFunc("/seeToken", seeToken)
 
 	//// Chaincode BIOCHAIN
 	// Rest resourses that match the chaincode method
@@ -124,23 +125,66 @@ func Serve() {
 
 // Add a user.token pair to the active user list
 func addToken(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Calling addToken...")
 	setupCorsResponse(&w, r)
 
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Println("Error while reading the request body")
+		return
+	}
+
+	email := payload["email"].(string)
+	token := payload["token"].(string)
+
 	// Retrieve request elements
-	queryParams := r.URL.Query()
-	email := queryParams.Get("email")
-	token := queryParams.Get("token")
 
 	// TODO: Check if user exists
 	checkExistence_utils(email, token)
 
 	// Add user to the active user list
 	activeUserList = append(activeUserList, ActiveUser{email: email, token: token, org: ""})
+	fmt.Println("End addToken")
 }
 
 // Remove user from the active user list
 func removeToken(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Calling removeToken...")
+	setupCorsResponse(&w, r)
 
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	flag := false
+
+	for i, u := range activeUserList {
+		if u.token == token {
+			activeUserList = append(activeUserList[:i], activeUserList[i+1:]...)
+			flag = true
+		}
+	}
+
+	if !flag {
+		fmt.Fprintf(w, "Error: Token not found!")
+		return
+	}
+
+	fmt.Println("Token deleted successfully!")
+	fmt.Println("End remove token...")
+}
+
+// Return all the elements in the activeUserList.
+// Used for debug purposes
+func seeToken(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Calling seeToken")
+	fmt.Println(activeUserList)
+	fmt.Println("End seeToken")
 }
 
 // Calls the methods "accept/deny" request
@@ -526,6 +570,11 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
+	// Bootstrap with an organization
+	// TEMPORARY
+	// TODO: Change to something that is stable
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
+
 	// Read the body of the request
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -563,6 +612,7 @@ func removeUser(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
 
+// Given the email address checks if the user is presetn in the ledger.
 func checkExistence(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for checkExistence")
 
@@ -576,6 +626,11 @@ func checkExistence(w http.ResponseWriter, r *http.Request) {
 	data := queryParams.Get("data")
 
 	fmt.Printf("	channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function, data)
+
+	// Bootstrap with an organization
+	// TEMPORARY
+	// TODO: Change to something that is stable
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
 
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)

@@ -265,7 +265,6 @@ function deployChaincode() {
         docker exec -it cli bash -c "peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/tlscacerts/*.pem --peerAddresses peer0.parma.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/parma.com/peers/peer0.parma.com/tls/ca.crt --peerAddresses peer0.brescia.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/brescia.com/peers/peer0.brescia.com/tls/ca.crt -C channel1 -n biosharing -c '{\"Args\":[\"insertData\"]}' --transient '{\"data\":\"$DATA\"}' "
     elif [ ${CRYPTO_CONFIG} == "Cryptogen" ]; then
         docker exec -it cli bash -c "peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt --peerAddresses peer0.parma.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/parma.com/peers/peer0.parma.com/tls/ca.crt --peerAddresses peer0.brescia.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/brescia.com/peers/peer0.brescia.com/tls/ca.crt -C channel1 -n biosharing -c '{\"Args\":[\"insertData\"]}' --transient '{\"data\":\"$DATA\"}' "
-
     fi
 
     sleep 10s
@@ -276,11 +275,18 @@ function deployChaincode() {
     infoln "Query getPrivateData()"
     docker exec -it cli bash -c "peer chaincode query -C channel1 -n biosharing -c '{\"Args\":[\"getPrivateData\"]}'"
     
-    
     sleep 2s
     infoln "Query viewPersonalData() Brescia"
     docker exec -it cli bash -c "CORE_PEER_LOCALMSPID=BresciaMSP CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/brescia.com/users/Admin@brescia.com/msp CORE_PEER_ADDRESS=peer0.brescia.com:7051 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/brescia.com/tlsca/tlsca.brescia.com-cert.pem peer chaincode query -C channel1 -n biosharing -c '{\"Args\":[\"getPrivateData\"]}'"
 
+    sleep 1s
+    infoln "Query createOrg() 'parma'"
+    infoln "Insert custom organization (doing this helps adding users and other organizations)"
+    if [ ${CRYPTO_CONFIG} == "CA" ]; then
+        docker exec -it cli bash -c "peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/tlscacerts/*.pem --peerAddresses peer0.parma.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/parma.com/peers/peer0.parma.com/tls/ca.crt --peerAddresses peer0.brescia.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/brescia.com/peers/peer0.brescia.com/tls/ca.crt -C channel1 -n user -c '{\"Args\":[\"createOrg\", \"parma\"]}' "
+    elif [ ${CRYPTO_CONFIG} == "Cryptogen" ]; then
+        docker exec -it cli bash -c "peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt --peerAddresses peer0.parma.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/parma.com/peers/peer0.parma.com/tls/ca.crt --peerAddresses peer0.brescia.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/brescia.com/peers/peer0.brescia.com/tls/ca.crt -C channel1 -n user -c '{\"Args\":[\"createOrg\", \"parma\"]}' "
+    fi
 }
 
 # Default values
