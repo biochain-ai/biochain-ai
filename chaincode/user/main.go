@@ -128,10 +128,11 @@ func (c *Chaincode_User) addUser(stub shim.ChaincodeStubInterface, args []string
 	orgByte, err := stub.GetState("ORG" + dataInput.Org)
 	if err != nil {
 		return shim.Error("Failed to get data from the ledger " + err.Error())
-	} else if orgByte == nil {
+	} else if orgByte != nil {
 		return shim.Error("Org " + dataInput.Org + " not found. User cannot be add with unknown organization.")
 	}
 
+	fmt.Println(dataInput)
 	// Marshall the data to be inserted into the ledger
 	dataToInsertJSON, err := json.Marshal(dataInput)
 	if err != nil {
@@ -181,6 +182,8 @@ func (c *Chaincode_User) checkExistence(stub shim.ChaincodeStubInterface, args [
 	if err != nil {
 		return shim.Error("Failed to get data from the ledger " + err.Error())
 	}
+
+	fmt.Println(string(dataByte))
 
 	if dataByte == nil {
 		// If not found return nil
@@ -306,6 +309,7 @@ func (c *Chaincode_User) createOrg(stub shim.ChaincodeStubInterface, args []stri
 
 	// Key to query the ledger
 	key := "ORG" + args[0]
+	fmt.Println("Key: " + key)
 
 	// Check if the organization already exists
 	orgBytes, err := stub.GetState(key)
@@ -325,6 +329,9 @@ func (c *Chaincode_User) createOrg(stub shim.ChaincodeStubInterface, args []stri
 
 	// Insert new org into the ledger
 	err = stub.PutState(key, levelBytes)
+	if err != nil {
+		return shim.Error("Error during the PutState.")
+	}
 
 	return shim.Success(nil)
 }

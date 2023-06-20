@@ -55,6 +55,7 @@ if(isset($_GET["code"])){
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
         CURLOPT_TIMEOUT => 0,
+        CURLOPT_HEADER => 1,
         CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_FOLLOWLOCATION => true,
@@ -70,11 +71,14 @@ if(isset($_GET["code"])){
         ));
 
         $response = curl_exec($curl);
-
+        $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+        $header = substr($response, 0, $header_size);
         echo $response;
+        echo $header;
 
         if(curl_errno($curl)){
             echo 'Curl error: ' . curl_error($curl);
+            return;
         }
 
         curl_close($curl);
@@ -114,6 +118,8 @@ if(isset($_GET["code"])){
         }
 
         echo "</div>";
+        echo "<a href='http://localhost:8080/logout.php'>Logout</a>
+        <a href='http://localhost:8080/pag2.php'>Vai a pagina 2</a>";
     }
 }
 
@@ -122,7 +128,5 @@ if(!isset($_SESSION['access_token'])) {
     echo "<br><a href='http://localhost:8080/index.php'>Torna alla pagina iniziale</a>";
 } 
 ?>
-<a href='http://localhost:8080/logout.php'>Logout</a>
-<a href='http://localhost:8080/pag2.php'>Vai a pagina 2</a>
 </body>
 </html>

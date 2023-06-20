@@ -128,6 +128,7 @@ func addToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Calling addToken...")
 	setupCorsResponse(&w, r)
 
+	// Retrieve the request element
 	payload := make(map[string]interface{})
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -138,10 +139,12 @@ func addToken(w http.ResponseWriter, r *http.Request) {
 	email := payload["email"].(string)
 	token := payload["token"].(string)
 
-	// Retrieve request elements
-
-	// TODO: Check if user exists
-	checkExistence_utils(email, token)
+	// Check if the user is present in the ledger
+	if checkExistence_utils(email) == 0 {
+		fmt.Println("User not found. Cannot add token.")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	// Add user to the active user list
 	activeUserList = append(activeUserList, ActiveUser{email: email, token: token, org: ""})
@@ -661,6 +664,8 @@ func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
+
 	// Set parameters
 	chaincodeid := "user"
 	channelID := "channel1"
@@ -840,8 +845,35 @@ func setupCorsResponse(w *http.ResponseWriter, r *http.Request) {
 // # checkExistence_utils
 //
 // Check if a user is present into the ledger
-func checkExistence_utils(email string, token string) (ret int) {
-	return 0
+func checkExistence_utils(email string) (ret int) {
+	fmt.Println("CheckExistence_utils...")
+
+	// Set the parameters
+	chainCodeName := "user"
+	channelID := "channel1"
+	function := "checkExistence"
+
+	fmt.Printf("channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
+
+	// Bootstrap with an organization
+	// TEMPORARY
+	// TODO: Change to something that is stable
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
+
+	network := setups.Gateway.GetNetwork(channelID)
+	contract := network.GetContract(chainCodeName)
+
+	result, err := contract.SubmitTransaction(function, email)
+	if err != nil {
+		fmt.Printf("Error: " + err.Error())
+		return 0
+	}
+
+	if string(result) == "" {
+		return 0
+	}
+
+	return 1
 }
 
 // # checkToken
