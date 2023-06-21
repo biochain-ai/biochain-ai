@@ -73,8 +73,10 @@ if(isset($_GET["code"])){
         $response = curl_exec($curl);
         $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
         $header = substr($response, 0, $header_size);
-        echo $response;
-        echo $header;
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        // echo $http_code;
+        // echo $response;
+        // echo $header;
 
         if(curl_errno($curl)){
             echo 'Curl error: ' . curl_error($curl);
@@ -91,35 +93,44 @@ if(isset($_GET["code"])){
         // curl_close($curlSES);
         // echo $result;
 
+        if ($http_code == 200) {
+            $_SESSION['registered'] = TRUE;
+            if(!empty($data['given_name'])){
+                $_SESSION['user_first_name'] = $data['given_name'];
+            }
+            if(!empty($data['family_name'])){
+                $_SESSION['user_last_name'] = $data['family_name'];
+            }
+            echo '<div class="card-body">
+            <h5 class="card-title">';
+            echo $_SESSION["user_first_name"].' '.$_SESSION["user_last_name"];
+            echo '</h5>';
 
-        if(!empty($data['given_name'])){
-            $_SESSION['user_first_name'] = $data['given_name'];
-        }
-        if(!empty($data['family_name'])){
-            $_SESSION['user_last_name'] = $data['family_name'];
-        }
-        echo '<div class="card-body">
-        <h5 class="card-title">';
-        echo $_SESSION["user_first_name"].' '.$_SESSION["user_last_name"];
-        echo '</h5>';
+            if(!empty($data['email'])){
+                $_SESSION['user_email_address'] = $data['email'];
+            }
 
-        if(!empty($data['email'])){
-            $_SESSION['user_email_address'] = $data['email'];
-        }
+            echo '<p class="card-text">Email:- ';
+            echo $_SESSION["user_email_address"];
+            echo "</p>";
+            if(!empty($data['gender'])){
+                $_SESSION['user_gender'] = $data['gender'];
+            }
+            if(!empty($data['picture'])){
+                $_SESSION['user_image'] = $data['picture'];
+            }
 
-        echo '<p class="card-text">Email:- ';
-        echo $_SESSION["user_email_address"];
-        echo "</p>";
-        if(!empty($data['gender'])){
-            $_SESSION['user_gender'] = $data['gender'];
+            echo "</div>";
+            echo "<a href='http://localhost:8080/pag2.php'>Vai a pagina 2</a>";
         }
-        if(!empty($data['picture'])){
-            $_SESSION['user_image'] = $data['picture'];
-        }
+        else{
+            $_SESSION['registered'] = FALSE;
 
-        echo "</div>";
-        echo "<a href='http://localhost:8080/logout.php'>Logout</a>
-        <a href='http://localhost:8080/pag2.php'>Vai a pagina 2</a>";
+            echo "<h3>Non sei un utente registrato, non puoi effettuare operazioni sul sistema.</h3>";
+            echo "<h3>Contatta l'amministratore per autorizzarti.</h3>";
+            echo "<a href='http://localhost:8080/logout.php'>Logout</a>";
+
+        }
     }
 }
 

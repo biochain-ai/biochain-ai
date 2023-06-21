@@ -26,8 +26,3 @@ Use this simple commands to start, stop, and communicate with the network
 
 #### Restart the Web server
 `./init.sh -rws`
-
----
-<!-- #### Start the REST server
-`cd rest-api-go/go`
-`go run main.go` -->
