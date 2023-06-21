@@ -67,6 +67,8 @@ func (c *Chaincode_User) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return c.createOrg(stub, args)
 	case "removeOrg":
 		return c.removeOrg(stub, args)
+	case "viewAllOrgs":
+		return c.viewAllOrgs(stub, args)
 	default:
 		fmt.Println("Unknown function!")
 		return shim.Error("Received unknown function")
@@ -155,7 +157,30 @@ func (c *Chaincode_User) addUser(stub shim.ChaincodeStubInterface, args []string
 func (c *Chaincode_User) removeUser(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	//fmt.Println("Calling removeUser function...")
 	// logger.Debugf("Calling removeUser function...")
+	fmt.Println("Calling removeUser...")
 
+	// Check number of arguments
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of parameter. Expecting 1.")
+	}
+
+	fmt.Println("Args: " + args[0])
+
+	// Perform a ledger query
+	dataByte, err := stub.GetState("USER" + args[0])
+	if err != nil {
+		return shim.Error("Failed to get data from the ledger " + err.Error())
+	} else if dataByte == nil {
+		return shim.Error("User does not exist. Cannot be removed.")
+	}
+
+	// Delete the user from the ledger.
+	err = stub.DelState("USER" + args[0])
+	if err != nil {
+		return shim.Error("Error during DelState.")
+	}
+
+	fmt.Println("End removeUser...")
 	return shim.Success(nil)
 }
 
@@ -366,6 +391,52 @@ func (c *Chaincode_User) removeOrg(stub shim.ChaincodeStubInterface, args []stri
 	}
 
 	return shim.Success(nil)
+}
+
+// # viewAllOrgs
+//
+// Allows to see all the orgs registered inside the ledger.
+func (c *Chaincode_User) viewAllOrgs(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	// logger.Debugf("Calling viewAllUsers function...")
+
+	// Perform the range query
+	resultIterator, err := stub.GetStateByRange("ORG", "")
+	if err != nil {
+		return shim.Error("Error during range query. " + err.Error())
+	}
+	defer resultIterator.Close()
+
+	// Write result on the buffer
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultIterator.HasNext() {
+		queryResponse, err := resultIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		// Add a comma before array member
+		if bArrayMemberAlreadyWritten {
+			buffer.WriteString(",")
+		}
+
+		// Check if the retrieved key-value pair is about the DATA type
+		if strings.Contains(queryResponse.Key, "ORG") {
+			buffer.WriteString(
+				fmt.Sprintf(`{"Key":"%s", "Record":"%s"}`,
+					queryResponse.Key, queryResponse.Value),
+			)
+			bArrayMemberAlreadyWritten = true
+		}
+
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("- viewAllOrgs Result:\n%s\n", buffer.String())
+
+	return shim.Success([]byte(buffer.String()))
 }
 
 // # Main

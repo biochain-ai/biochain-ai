@@ -116,6 +116,7 @@ func Serve() {
 	http.HandleFunc("/setOrgLevel", setOrgLevel)
 	http.HandleFunc("/createOrg", createOrg)
 	http.HandleFunc("/removeOrg", removeOrg)
+	http.HandleFunc("/viewAllOrgs", viewAllOrgs)
 
 	fmt.Println("Listening (http://localhost:3000/)...")
 	if err := http.ListenAndServe(":3000", nil); err != nil {
@@ -611,11 +612,48 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Result: " + string(result))
 }
 
+// Delete the user from the ledger.
 func removeUser(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	fmt.Println("Received request for removeUSer")
+
+	setupCorsResponse(&w, r)
+
+	// TEMPORARY BOOTSTRAP
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
+
+	// Set the parameters
+	queryParams := r.URL.Query()
+	chainCodeName := "user"
+	channelID := "channel1"
+	function := "removeUser"
+	data := queryParams.Get("data")
+
+	fmt.Printf("channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function, data)
+
+	network := setups.Gateway.GetNetwork(channelID)
+	contract := network.GetContract(chainCodeName)
+
+	// Call the method using the received data
+	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
+	if err != nil {
+		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
+		return
+	}
+	txn_endorsed, err := txn_proposal.Endorse()
+	if err != nil {
+		fmt.Fprintf(w, "Error endorsing txn: %s", err)
+		return
+	}
+	txn_committed, err := txn_endorsed.Submit()
+	if err != nil {
+		fmt.Fprintf(w, "Error submitting transaction: %s", err)
+		return
+	}
+
+	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
 }
 
-// Given the email address checks if the user is presetn in the ledger.
+// Given the email address checks if the user is present in the ledger.
 func checkExistence(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for checkExistence")
 
@@ -659,11 +697,13 @@ func checkExistence(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Allows to see all the users registered into the ledger.
 func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for viewAllUsers")
 
 	setupCorsResponse(&w, r)
 
+	// TEMPORARY BOOTSTRAP
 	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
 
 	// Set parameters
@@ -685,8 +725,49 @@ func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Response: %s", evaluateResponse)
 }
 
+// It allows to change the level of the selected orgnization.
 func setOrgLevel(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	fmt.Println("Received request for setOrgLevel")
+
+	setupCorsResponse(&w, r)
+
+	// TEMPORARY BOOTSTRAP
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
+
+	// Set the parameters
+	queryParams := r.URL.Query()
+	chainCodeName := "user"
+	channelID := "channel1"
+	function := "setOrgLevel"
+	org := queryParams.Get("org")
+	level := queryParams.Get("level")
+
+	fmt.Printf("channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
+
+	fmt.Println("Org: " + org)
+	fmt.Println("Level: " + level)
+
+	network := setups.Gateway.GetNetwork(channelID)
+	contract := network.GetContract(chainCodeName)
+
+	// Call the method using the received data
+	txn_proposal, err := contract.NewProposal(function, client.WithArguments(org, level))
+	if err != nil {
+		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
+		return
+	}
+	txn_endorsed, err := txn_proposal.Endorse()
+	if err != nil {
+		fmt.Fprintf(w, "Error endorsing txn: %s", err)
+		return
+	}
+	txn_committed, err := txn_endorsed.Submit()
+	if err != nil {
+		fmt.Fprintf(w, "Error submitting transaction: %s", err)
+		return
+	}
+
+	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
 }
 
 // Calls the 'createOrg' method
@@ -701,6 +782,9 @@ func createOrg(w http.ResponseWriter, r *http.Request) {
 	channelID := "channel1"
 	function := "createOrg"
 	data := queryParams.Get("data")
+
+	// TEMPORARY BOOTSTRAP
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
 
 	fmt.Printf("	channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function, data)
 
@@ -733,20 +817,23 @@ func removeOrg(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
+	// TEMPORARY BOOTSTRAP
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
+
 	// Set the parameters
 	queryParams := r.URL.Query()
 	chainCodeName := "user"
 	channelID := "channel1"
 	function := "removeOrg"
-	data := queryParams.Get("data")
+	org := queryParams.Get("org")
 
-	fmt.Printf("	channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function, data)
+	fmt.Printf("channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function)
 
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
 
 	// Call the method using the received data
-	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
+	txn_proposal, err := contract.NewProposal(function, client.WithArguments(org))
 	if err != nil {
 		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
 		return
@@ -763,6 +850,34 @@ func removeOrg(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
+}
+
+// Allows to see all the orgs registered into the ledger.
+func viewAllOrgs(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Received request for viewAllOrgs")
+
+	setupCorsResponse(&w, r)
+
+	// TEMPORARY BOOTSTRAP
+	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
+
+	// Set parameters
+	chaincodeid := "user"
+	channelID := "channel1"
+	//function := queryParams.Get("function")
+	fmt.Printf("	channel: %s, chaincode: %s\n", channelID, chaincodeid)
+	network := setups.Gateway.GetNetwork(channelID)
+	contract := network.GetContract(chaincodeid)
+
+	// Select the function to query
+	evaluateResponse, err := contract.EvaluateTransaction("viewAllOrgs")
+	// Error check
+	if err != nil {
+		fmt.Fprintf(w, "Error: %s", err)
+		return
+	}
+
+	fmt.Fprintf(w, "Response: %s", evaluateResponse)
 }
 
 // //////////////////////////////////////////////////////////////////////////////
