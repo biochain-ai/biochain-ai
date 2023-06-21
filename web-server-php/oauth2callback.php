@@ -122,6 +122,47 @@ if(isset($_GET["code"])){
 
             echo "</div>";
             echo "<a href='http://localhost:8080/pag2.php'>Vai a pagina 2</a>";
+            echo "<a href='http://localhost:8080/logout.php'>Logout</a>";
+
+            echo '
+            <hr>
+            <h4>Inserisci un nuovo dato</h4>
+            <form name="insertDataForm" id="insertDataForm" onSubmit="JavaScript:insertData()">
+                <label for="firstname">Nome Dato</label>
+                <input type="text" name="name" id="name" /><br />
+                <label for="lastname">Descrizione</label>
+                <input type="text" name="description" id="description"/><br />
+                <label for="lastname">Dato</label>
+                <input type="text" name="data" id="data"/><br />
+                <input name="" type="submit" value="Inserisci il dato" />
+            </form>
+            
+            <hr>
+            <h4>Inserisci un nuovo utente</h4>
+            <form name="addUserForm" id="addUserForm" onSubmit="JavaScript:addUser()">
+                <label for="mail">Mail</label>
+                <input type="text" name="mail" id="mail" /><br />
+                <label for="commonname">Nome</label>
+                <input type="text" name="commonname" id="commonname" /><br />
+                <label for="org">Organizzazione</label>
+                <input type="text" name="org" id="org"/><br />
+                <input name="" type="submit" value="Inserisci l\'utente" />
+            </form>
+            
+            <hr>
+        
+            <br>
+            <button onclick="viewCatalogue()">Vedi il catalogo</button>
+            <br>
+            <button onclick="viewAllUsers()">Visualizza tutti gli utenti</button>
+            <br>
+            
+            
+            <div>
+                <p>Risultato:</p>
+                <p id="res" style="background-color:rgb(88, 158, 214);"></p>
+            </div>
+            ';
         }
         else{
             $_SESSION['registered'] = FALSE;
@@ -129,7 +170,6 @@ if(isset($_GET["code"])){
             echo "<h3>Non sei un utente registrato, non puoi effettuare operazioni sul sistema.</h3>";
             echo "<h3>Contatta l'amministratore per autorizzarti.</h3>";
             echo "<a href='http://localhost:8080/logout.php'>Logout</a>";
-
         }
     }
 }
@@ -139,5 +179,143 @@ if(!isset($_SESSION['access_token'])) {
     echo "<br><a href='http://localhost:8080/index.php'>Torna alla pagina iniziale</a>";
 } 
 ?>
+
+<script>
+function insertData() {
+    event.preventDefault();
+    var xhr = new XMLHttpRequest();
+    var token='<?php echo $_SESSION["access_token"];?>';
+
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("POST", "http://localhost:3000/insertData?token="+token, true);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+        // La richiesta è stata completata con successo
+        var response = xhr.responseText;
+        // Puoi manipolare la risposta qui come desideri
+        //console.log(response);
+        // Scrive la risposta in un paragrafo	
+        document.getElementById("res").textContent = response
+        // Si è verificato un errore durante la richiesta
+        console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Leggi i dati dal form
+    var name = document.getElementById("name").value;
+    var description = document.getElementById("description").value;
+    var data = document.getElementById("data").value;
+
+    // Crea l'oggetto dei dati da inviare come JSON
+    var obj = {
+        name: name,
+        description: description,
+        data: data
+    };
+
+    // Invia la richiesta
+    xhr.send(JSON.stringify(obj));
+    var insertForm = document.getElementById("insertDataForm");
+    insertForm.reset();
+}
+
+function addUser() {
+    event.preventDefault();
+    
+    var xhr = new XMLHttpRequest();
+
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("POST", "http://localhost:3000/addUser", true);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+        // La richiesta è stata completata con successo
+        var response = xhr.responseText;
+        // Puoi manipolare la risposta qui come desideri
+        //console.log(response);
+        // Scrive la risposta in un paragrafo	
+        document.getElementById("res").textContent = response
+        // Si è verificato un errore durante la richiesta
+        console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Leggi i dati dal form
+    var mail = document.getElementById("mail").value;
+    var commonname = document.getElementById("commonname").value;
+    var org = document.getElementById("org").value;
+    var level = "0";
+
+    // Crea l'oggetto dei dati da inviare come JSON
+    var obj = {
+        Mail: mail,
+        Org: org,
+        CommonName: commonname,
+        Level: level
+    };
+
+    // Invia la richiesta
+    xhr.send(JSON.stringify(obj));
+    var insertForm = document.getElementById("addUserForm");
+    insertForm.reset();
+}
+
+function viewCatalogue() {
+    // Crea l'oggetto XMLHttpRequest
+    var xhr = new XMLHttpRequest();
+
+    var token='<?php echo $_SESSION["access_token"];?>';
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("GET", "http://localhost:3000/view?function=catalogue&token="+token, true);
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+        // La richiesta è stata completata con successo
+        var response = xhr.responseText;
+        // Puoi manipolare la risposta qui come desideri
+        console.log(response);
+        document.getElementById("res").textContent = response
+        } else {
+        // Si è verificato un errore durante la richiesta
+        console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Invia la richiesta
+    xhr.send();
+}
+function viewAllUsers(){
+    // Crea l'oggetto XMLHttpRequest
+    var xhr = new XMLHttpRequest();
+
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("GET", "http://localhost:3000/viewAllUsers", true);
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+        // La richiesta è stata completata con successo
+        var response = xhr.responseText;
+        // Puoi manipolare la risposta qui come desideri
+        console.log(response);
+        document.getElementById("res").textContent = response
+        } else {
+        // Si è verificato un errore durante la richiesta
+        console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Invia la richiesta
+    xhr.send();
+}
+	</script>
 </body>
 </html>

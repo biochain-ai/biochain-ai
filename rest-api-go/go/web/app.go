@@ -280,7 +280,11 @@ func InsertData(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	token := queryParams.Get("token")
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Read the body of the request
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -309,7 +313,6 @@ func InsertData(w http.ResponseWriter, r *http.Request) {
 	// Check for errors
 	if err != nil {
 		fmt.Fprintf(w, "Error submitting transaction: %s", err)
-
 	}
 
 	fmt.Println("Result: " + string(result))
@@ -953,8 +956,8 @@ func loadCertificate(filename string) (*x509.Certificate, error) {
 // Allows to manage Cors response
 func setupCorsResponse(w *http.ResponseWriter, r *http.Request) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS, PUT, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Origin, Accept, Content-Type, Content-Length, Authorization")
 }
 
 // # checkExistence_utils
@@ -1006,20 +1009,23 @@ func checkToken(token string) (r bool) {
 // # checkTokenandBootstrap
 //
 // Checks if the token is valid and sets the configuration info
-func checkTokenAndBootstrap(token string, w http.ResponseWriter) {
+func checkTokenAndBootstrap(token string, w http.ResponseWriter) (ret int) {
 	// Check if the token is valid nd bootstrap the connection settings
 	if !checkToken(token) {
 		fmt.Fprintf(w, "Error: User not allowed!")
-		return
+		return 1
 	} else {
 		for _, u := range activeUserList {
 			if u.token == token {
 				for _, o := range orgsList {
 					if u.org == o.org {
 						setups.Bootstrap(o.org, o.msp, o.port)
+						return 0
 					}
 				}
 			}
 		}
 	}
+
+	return 1
 }
