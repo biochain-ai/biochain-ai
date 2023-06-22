@@ -33,7 +33,7 @@ type OrgSetup struct {
 
 var setups OrgSetup
 
-// Enumeration used in assetRequest
+// Enumeration used in assetRequest.
 type status int
 
 const (
@@ -42,7 +42,7 @@ const (
 	Rejected status = iota
 )
 
-// struct used for the sharing requests
+// Struct used for the sharing requests.
 type sharingRequest struct {
 	RequestId int64
 	Applicant string
@@ -51,29 +51,39 @@ type sharingRequest struct {
 	Status    status
 }
 
-// Struct used to retrive the elements of the viewRequest call
+// Struct used to retrive the elements of the viewRequest call.
 type sharingElement struct {
 	Key    string
 	Record sharingRequest
 }
 
-// Active User type
+// User type.
+type ledgerUser struct {
+	Mail       string
+	Org        string
+	CommonName string
+	Level      string
+}
+
+// Active User type.
 type ActiveUser struct {
 	email string
 	token string
 	org   string
 }
 
+// Org type.
 type Org struct {
 	org  string
 	msp  string
 	port string
 }
 
-// List of all the active users
+// List of all the active users.
+// TODO: save this information to a file NOT in memory.
 var activeUserList []ActiveUser
 
-// List of all the organizations
+// List of all the organizations.
 var orgsList []Org
 
 // Serve starts http web server.
@@ -87,25 +97,21 @@ func Serve() {
 	// activeUserList = append(activeUserList, ActiveUser{token: "", email: "", org: ""})
 
 	// http.HandleFunc("/bootstrap", setups.Bootstrap)
-	// http.HandleFunc("/query", setups.Query)
-	// http.HandleFunc("/invoke", setups.Invoke)
-	// http.HandleFunc("/transient", setups.Transient)
-	// http.HandleFunc("/test", setups.Test)
 
-	// Used to record tokens and users
+	// Used to record tokens and users.
 	http.HandleFunc("/addToken", addToken)
 	http.HandleFunc("/removeToken", removeToken)
 	http.HandleFunc("/seeToken", seeToken)
 
 	//// Chaincode BIOCHAIN
 	// Rest resourses that match the chaincode method
-	http.HandleFunc("/insertData", InsertData)
-	http.HandleFunc("/removeData", RemoveData)
-	http.HandleFunc("/getPrivateData", GetPrivateData)
-	http.HandleFunc("/requestData", RequestData)
+	http.HandleFunc("/insertData", insertData)
+	http.HandleFunc("/removeData", removeData)
+	http.HandleFunc("/getPrivateData", getPrivateData)
+	http.HandleFunc("/requestData", requestData)
 
-	// Rest resources that does not match with the chaincode mathods
-	http.HandleFunc("/view", View)
+	// Rest resources that does not match with the chaincode methods
+	http.HandleFunc("/view", view)
 	http.HandleFunc("/managerequest", ManageRequest)
 
 	//// Chaincode USER
@@ -124,12 +130,12 @@ func Serve() {
 	}
 }
 
-// Add a user.token pair to the active user list
+// Add a user-token pair to the activeUserList.
 func addToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Calling addToken...")
 	setupCorsResponse(&w, r)
 
-	// Retrieve the request element
+	// Retrieve the request element from the post request
 	payload := make(map[string]interface{})
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -141,14 +147,23 @@ func addToken(w http.ResponseWriter, r *http.Request) {
 	token := payload["token"].(string)
 
 	// Check if the user is present in the ledger
-	if checkExistence_utils(email) == 0 {
+	result := checkExistence_utils(email)
+	if result == "" {
 		fmt.Println("User not found. Cannot add token.")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
+	var u ledgerUser
+	err = json.Unmarshal([]byte(result), &u)
+	if err != nil {
+		fmt.Println("Error unmarshaling user data.")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	// Add user to the active user list
-	activeUserList = append(activeUserList, ActiveUser{email: email, token: token, org: ""})
+	activeUserList = append(activeUserList, ActiveUser{email: u.Mail, token: token, org: u.Org})
 	fmt.Println("End addToken")
 }
 
@@ -191,18 +206,29 @@ func seeToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("End seeToken")
 }
 
-// Calls the methods "accept/deny" request
+// Calls the methods "accept/deny" request.
 func ManageRequest(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request to accept/deny a sharing request")
 
 	setupCorsResponse(&w, r)
 
-	queryParams := r.URL.Query()
+	// queryParams := r.URL.Query()
 	chaincodeid := "biosharing"
 	channelID := "channel1"
-	method := queryParams.Get("method")
-	dataid := queryParams.Get("id")
-	token := queryParams.Get("token")
+	// method := queryParams.Get("method")
+	// dataid := queryParams.Get("id")
+	// token := queryParams.Get("token")
+
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	method := payload["method"].(string)
+	dataid := payload["dataid"].(string)
 
 	checkTokenAndBootstrap(token, w)
 
@@ -272,29 +298,35 @@ func ManageRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the chaincode method 'insertData'
-func InsertData(w http.ResponseWriter, r *http.Request) {
+func insertData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for insertData")
 
 	setupCorsResponse(&w, r)
 
-	queryParams := r.URL.Query()
-	token := queryParams.Get("token")
+	// queryParams := r.URL.Query()
+	// token := queryParams.Get("token")
 
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
 	ret := checkTokenAndBootstrap(token, w)
 	if ret == 1 {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	// Read the body of the request
-	reqBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		fmt.Println("Error while reading the request body")
-	}
+	name := payload["name"].(string)
+	description := payload["description"].(string)
+	data := payload["data"].(string)
 
 	// Create a map with the received data
 	privateData := map[string][]byte{
-		"data": []byte(reqBody),
+		"data": []byte("{\"name\":\"" + name + "\", \"description\": \"" + description + "\", \"data\": \"" + data + "\"}"),
 	}
 
 	// Invoke the method with transient data
@@ -316,10 +348,11 @@ func InsertData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("Result: " + string(result))
+	w.WriteHeader(http.StatusOK)
 }
 
 // Calls the chaincode method 'removeData'
-func RemoveData(w http.ResponseWriter, r *http.Request) {
+func removeData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Receiving request for removeData")
 
 	setupCorsResponse(&w, r)
@@ -362,7 +395,7 @@ func RemoveData(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the 'getPrivateData' method
-func GetPrivateData(w http.ResponseWriter, r *http.Request) {
+func getPrivateData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for getPrivateData")
 
 	setupCorsResponse(&w, r)
@@ -394,7 +427,7 @@ func GetPrivateData(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the 'requestData' method
-func RequestData(w http.ResponseWriter, r *http.Request) {
+func requestData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for requestData")
 
 	setupCorsResponse(&w, r)
@@ -436,7 +469,7 @@ func RequestData(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the 'view' methods
-func View(w http.ResponseWriter, r *http.Request) {
+func view(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for view")
 
 	setupCorsResponse(&w, r)
@@ -963,7 +996,7 @@ func setupCorsResponse(w *http.ResponseWriter, r *http.Request) {
 // # checkExistence_utils
 //
 // Check if a user is present into the ledger
-func checkExistence_utils(email string) (ret int) {
+func checkExistence_utils(email string) (ret string) {
 	fmt.Println("CheckExistence_utils...")
 
 	// Set the parameters
@@ -981,17 +1014,20 @@ func checkExistence_utils(email string) (ret int) {
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
 
-	result, err := contract.SubmitTransaction(function, email)
+	txn_proposal, err := contract.NewProposal(function, client.WithArguments(email))
 	if err != nil {
-		fmt.Printf("Error: " + err.Error())
-		return 0
+		return ""
+	}
+	txn_endorsed, err := txn_proposal.Endorse()
+	if err != nil {
+		return ""
+	}
+	_, err = txn_endorsed.Submit()
+	if err != nil {
+		return ""
 	}
 
-	if string(result) == "" {
-		return 0
-	}
-
-	return 1
+	return string(txn_endorsed.Result())
 }
 
 // # checkToken
@@ -1018,7 +1054,7 @@ func checkTokenAndBootstrap(token string, w http.ResponseWriter) (ret int) {
 		for _, u := range activeUserList {
 			if u.token == token {
 				for _, o := range orgsList {
-					if u.org == o.org {
+					if strings.ToLower(u.org) == strings.ToLower(o.org) {
 						setups.Bootstrap(o.org, o.msp, o.port)
 						return 0
 					}

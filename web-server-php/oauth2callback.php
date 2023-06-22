@@ -187,7 +187,7 @@ function insertData() {
     var token='<?php echo $_SESSION["access_token"];?>';
 
     // Definisci il tipo di richiesta e l'URL di destinazione
-    xhr.open("POST", "http://localhost:3000/insertData?token="+token, true);
+    xhr.open("POST", "http://localhost:3000/insertData", true);
     xhr.setRequestHeader("Accept", "application/json");
     xhr.setRequestHeader("Content-Type", "application/json");
 
@@ -211,14 +211,15 @@ function insertData() {
     var data = document.getElementById("data").value;
 
     // Crea l'oggetto dei dati da inviare come JSON
-    var obj = {
-        name: name,
-        description: description,
-        data: data
-    };
+    // var obj = {
+    //     name: name,
+    //     description: description,
+    //     data: data,
+    //     token: token
+    // };
 
     // Invia la richiesta
-    xhr.send(JSON.stringify(obj));
+    xhr.send(JSON.stringify({"name": name, "description": description, "data": data, "token": token}));
     var insertForm = document.getElementById("insertDataForm");
     insertForm.reset();
 }
