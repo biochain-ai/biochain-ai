@@ -88,8 +88,8 @@ var orgsList []Org
 
 // Serve starts http web server.
 func Serve() {
-	// Populate orgs informations
-	// TODO: add this informations into a conf file and read the file
+	// Populate orgs informations.
+	// TODO: add this informations into a conf file and read the file.
 	orgsList = append(orgsList, Org{org: "parma", msp: "ParmaMSP", port: "7051"})
 	orgsList = append(orgsList, Org{org: "brescia", msp: "BresciaMSP", port: "7051"})
 
@@ -103,18 +103,18 @@ func Serve() {
 	http.HandleFunc("/removeToken", removeToken)
 	http.HandleFunc("/seeToken", seeToken)
 
-	//// Chaincode BIOCHAIN
-	// Rest resourses that match the chaincode method
+	//// Chaincode BIOCHAIN.
+	// Rest resourses that match the chaincode method.
 	http.HandleFunc("/insertData", insertData)
 	http.HandleFunc("/removeData", removeData)
 	http.HandleFunc("/getPrivateData", getPrivateData)
 	http.HandleFunc("/requestData", requestData)
 
-	// Rest resources that does not match with the chaincode methods
+	// Rest resources that does not match with the chaincode methods.
 	http.HandleFunc("/view", view)
 	http.HandleFunc("/managerequest", ManageRequest)
 
-	//// Chaincode USER
+	//// Chaincode USER.
 	http.HandleFunc("/addUser", addUser)
 	http.HandleFunc("/removeUser", removeUser)
 	http.HandleFunc("/checkExistence", checkExistence)
@@ -133,9 +133,10 @@ func Serve() {
 // Add a user-token pair to the activeUserList.
 func addToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Calling addToken...")
+
 	setupCorsResponse(&w, r)
 
-	// Retrieve the request element from the post request
+	// Retrieve the request element from the post request.
 	payload := make(map[string]interface{})
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -146,7 +147,7 @@ func addToken(w http.ResponseWriter, r *http.Request) {
 	email := payload["email"].(string)
 	token := payload["token"].(string)
 
-	// Check if the user is present in the ledger
+	// Check if the user is present in the ledger.
 	result := checkExistence_utils(email)
 	if result == "" {
 		fmt.Println("User not found. Cannot add token.")
@@ -154,6 +155,7 @@ func addToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Retrieve the informations about the user.
 	var u ledgerUser
 	err = json.Unmarshal([]byte(result), &u)
 	if err != nil {
@@ -164,14 +166,16 @@ func addToken(w http.ResponseWriter, r *http.Request) {
 
 	// Add user to the active user list
 	activeUserList = append(activeUserList, ActiveUser{email: u.Mail, token: token, org: u.Org})
+	fmt.Println("Added " + u.Mail + " to the activeUserList")
 	fmt.Println("End addToken")
 }
 
-// Remove user from the active user list
+// Remove user from the active user list.
 func removeToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Calling removeToken...")
 	setupCorsResponse(&w, r)
 
+	// Retrieve the request element from the post request.
 	payload := make(map[string]interface{})
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -182,6 +186,7 @@ func removeToken(w http.ResponseWriter, r *http.Request) {
 	token := payload["token"].(string)
 	flag := false
 
+	// Remove the user from the activeUserList and keep al the others.
 	for i, u := range activeUserList {
 		if u.token == token {
 			activeUserList = append(activeUserList[:i], activeUserList[i+1:]...)
@@ -199,9 +204,10 @@ func removeToken(w http.ResponseWriter, r *http.Request) {
 }
 
 // Return all the elements in the activeUserList.
-// Used for debug purposes
+// Used for debug purposes.
 func seeToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Calling seeToken")
+	fmt.Print("ActiveUserList: ")
 	fmt.Println(activeUserList)
 	fmt.Println("End seeToken")
 }
@@ -212,13 +218,10 @@ func ManageRequest(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
-	// queryParams := r.URL.Query()
 	chaincodeid := "biosharing"
 	channelID := "channel1"
-	// method := queryParams.Get("method")
-	// dataid := queryParams.Get("id")
-	// token := queryParams.Get("token")
 
+	// Retrieve the request element from the post request.
 	payload := make(map[string]interface{})
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -235,7 +238,7 @@ func ManageRequest(w http.ResponseWriter, r *http.Request) {
 	var function string
 	var requesterMSPID string
 
-	// Select the action to perform
+	// Select the action to perform.
 	method = strings.ToLower(method)
 	if method == "accept" {
 		function = "acceptRequest"
@@ -249,25 +252,24 @@ func ManageRequest(w http.ResponseWriter, r *http.Request) {
 	contract := network.GetContract(chaincodeid)
 
 	fmt.Printf("Executing %s", function)
-	// fmt.Printf("	channel: %s, chaincode: %s, function: %s, method: %s, id: %s\n", channelID, chaincodeid, function, method, dataid)
 
-	// Fetch with a ledger query the MSPID of the other endorser
+	// Fetch with a ledger query the MSPID of the other endorser.
 	var sE []sharingElement
 	evaluateResponse, err := contract.EvaluateTransaction("viewRequests")
-	// Error check
 	if err != nil {
 		fmt.Fprintf(w, "Error: %s", err)
 		return
 	}
-	// Unmarshall bytes array
+	// Unmarshall bytes array.
 	err = json.Unmarshal(evaluateResponse, &sE)
 	if err != nil {
 		fmt.Println("Error during data unmarshall " + err.Error())
 	}
 
-	// Convert dataid from string to integer
+	// Convert dataid from string to integer.
 	dataidInt, _ := strconv.ParseInt(dataid, 10, 64)
-	// Retrieve the MSPID from the request that need to be satisfied
+
+	// Retrieve the MSPID from the request that need to be satisfied.
 	for e := range sE {
 		if sE[e].Record.RequestId == dataidInt {
 			fmt.Println(strings.Split(sE[e].Record.Applicant, "#")[1])
@@ -275,37 +277,36 @@ func ManageRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Check MSPID correctness
+	// Check MSPID correctness.
 	if !strings.Contains(requesterMSPID, "MSP") {
 		fmt.Fprintf(w, "Error retrieving MSPID")
 		return
 	}
 
-	// Submit transaction to accept sharing request
+	// Submit transaction to accept sharing request.
 	result, err := contract.Submit(
 		function,
 		client.WithArguments(dataid),
 		client.WithEndorsingOrganizations(setups.MSPID, requesterMSPID),
 	)
 
-	// Check for errors
+	// Check for errors.
 	if err != nil {
 		fmt.Fprintf(w, "Error submitting transaction: %s", err)
 
 	}
 
 	fmt.Println("Result: " + string(result))
+	fmt.Println("End " + method + " sharing request")
 }
 
-// Calls the chaincode method 'insertData'
+// Calls the chaincode method 'insertData'.
 func insertData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for insertData")
 
 	setupCorsResponse(&w, r)
 
-	// queryParams := r.URL.Query()
-	// token := queryParams.Get("token")
-
+	// Retrieve the request element from the post request.
 	payload := make(map[string]interface{})
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -324,12 +325,12 @@ func insertData(w http.ResponseWriter, r *http.Request) {
 	description := payload["description"].(string)
 	data := payload["data"].(string)
 
-	// Create a map with the received data
+	// Create a map with the received data for the chaincode method.
 	privateData := map[string][]byte{
 		"data": []byte("{\"name\":\"" + name + "\", \"description\": \"" + description + "\", \"data\": \"" + data + "\"}"),
 	}
 
-	// Invoke the method with transient data
+	// Invoke the method with transient data.
 	network := setups.Gateway.GetNetwork("channel1")
 	contract := network.GetContract("biosharing")
 	result, err := contract.Submit(
@@ -339,10 +340,9 @@ func insertData(w http.ResponseWriter, r *http.Request) {
 		client.WithEndorsingOrganizations(setups.MSPID),
 	)
 
-	// Console log
 	fmt.Println("Inserting data for %s", setups.MSPID)
 
-	// Check for errors
+	// Check for errors.
 	if err != nil {
 		fmt.Fprintf(w, "Error submitting transaction: %s", err)
 	}
@@ -351,26 +351,30 @@ func insertData(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// Calls the chaincode method 'removeData'
+// Calls the chaincode method 'removeData'.
 func removeData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Receiving request for removeData")
 
 	setupCorsResponse(&w, r)
 
-	queryParams := r.URL.Query()
-	token := queryParams.Get("token")
+	// Retrieve the request element from the post request.
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	id := payload["id"].(string)
+	owner := payload["owner"].(string)
+	description := payload["description"].(string)
 
 	checkTokenAndBootstrap(token, w)
 
-	// Read the body of the request
-	reqBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		fmt.Println("Error while reading the request body")
-	}
-
-	// Create a map with the received data
+	// Create a map with the received data for the chaincode method.
 	privateData := map[string][]byte{
-		"data": []byte(reqBody),
+		"data": []byte("{\"id\":\"" + id + "\", \"owner\": \"" + owner + "\", \"description\": \"" + description + "\"}"),
 	}
 
 	// Invoke the method with transient data
@@ -383,10 +387,9 @@ func removeData(w http.ResponseWriter, r *http.Request) {
 		client.WithEndorsingOrganizations(setups.MSPID),
 	)
 
-	// Console log
 	fmt.Println("Removing data for %s", setups.MSPID)
 
-	// Check for errors
+	// Check for errors.
 	if err != nil {
 		fmt.Fprintf(w, "Error submitting transaction: %s", err)
 	}
@@ -394,14 +397,13 @@ func removeData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Result: " + string(result))
 }
 
-// Calls the 'getPrivateData' method
+// Calls the 'getPrivateData' method.
 func getPrivateData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for getPrivateData")
 
 	setupCorsResponse(&w, r)
 
-	// Set parameters
-	queryParams := r.URL.Query()
+	// Set parameters.
 	chaincodeid := "biosharing"
 	channelID := "channel1"
 	function := "getPrivateData"
@@ -409,15 +411,23 @@ func getPrivateData(w http.ResponseWriter, r *http.Request) {
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chaincodeid)
 
-	token := queryParams.Get("token")
+	// Retrieve the request element from the post request.
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
 
 	checkTokenAndBootstrap(token, w)
 
-	// Select the function to query
+	// Select the function to query.
 	fmt.Println("Calling " + function)
 
 	evaluateResponse, err := contract.EvaluateTransaction(function)
-	// Error check
+	// Error check.
 	if err != nil {
 		fmt.Fprintf(w, "Error: %s", err)
 		return
@@ -426,29 +436,36 @@ func getPrivateData(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Response: %s", evaluateResponse)
 }
 
-// Calls the 'requestData' method
+// Calls the 'requestData' method.
 func requestData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for requestData")
 
 	setupCorsResponse(&w, r)
 
 	// Set the parameters
-	queryParams := r.URL.Query()
 	chainCodeName := "biosharing"
 	channelID := "channel1"
 	function := "requestData"
-	data := queryParams.Get("data")
 
-	fmt.Printf("	channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function, data)
+	fmt.Printf("	channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
 
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
 
-	token := queryParams.Get("token")
+	// Retrieve the request element from the post request.
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	data := payload["data"].(string)
 
 	checkTokenAndBootstrap(token, w)
 
-	// Call the method using the received data
+	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
 	if err != nil {
 		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
@@ -468,37 +485,43 @@ func requestData(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
 }
 
-// Calls the 'view' methods
+// Calls the 'view' methods.
 func view(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for view")
 
 	setupCorsResponse(&w, r)
 
 	// Set parameters
-	queryParams := r.URL.Query()
 	chaincodeid := "biosharing"
 	channelID := "channel1"
-	function := queryParams.Get("function")
-	token := queryParams.Get("token")
-
-	fmt.Printf("Channel: %s, chaincode: %s, function: %s, token: %s\n", channelID, chaincodeid, function, token)
-
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chaincodeid)
 
+	// Retrieve the request element from the post request.
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	function := payload["function"].(string)
+
+	fmt.Printf("Channel: %s, chaincode: %s, function: %s, token: %s\n", channelID, chaincodeid, function)
+
 	// Check if the token is valid and bootstrap the connection settings
-	// otherwise return with error
+	// otherwise return with error.
 	checkTokenAndBootstrap(token, w)
 
-	// To lower the function name
+	// To lower the function name.
 	function = strings.ToLower(function)
 
-	// Select the function to query
+	// Select the function to query.
 	fmt.Println("Calling " + function)
 	switch function {
 	case "catalogue":
 		evaluateResponse, err := contract.EvaluateTransaction("viewCatalogue")
-		// Error check
 		if err != nil {
 			fmt.Fprintf(w, "Error: %s", err)
 			return
@@ -508,7 +531,6 @@ func view(w http.ResponseWriter, r *http.Request) {
 		break
 	case "personaldata":
 		evaluateResponse, err := contract.EvaluateTransaction("viewPersonalData")
-		// Error check
 		if err != nil {
 			fmt.Fprintf(w, "Error: %s", err)
 			return
@@ -518,7 +540,6 @@ func view(w http.ResponseWriter, r *http.Request) {
 		break
 	case "requests":
 		evaluateResponse, err := contract.EvaluateTransaction("viewRequests")
-		// Error check
 		if err != nil {
 			fmt.Fprintf(w, "Error: %s", err)
 			return
@@ -528,7 +549,6 @@ func view(w http.ResponseWriter, r *http.Request) {
 		break
 	case "allrequests":
 		evaluateResponse, err := contract.EvaluateTransaction("viewAllRequests")
-		// Error check
 		if err != nil {
 			fmt.Fprintf(w, "Error: %s", err)
 			return
@@ -545,17 +565,12 @@ func view(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("End view function")
 }
 
+// Bootstrap function.
+// It allows to set the necessary variables to make requests to the blockchain
+// network.
 func (setup *OrgSetup) Bootstrap(org string, msp string, port string) {
 	fmt.Println("Bootstrap")
 
-	// setupCorsResponse(&w, r)
-
-	// queryParams := r.URL.Query()
-	// org := queryParams.Get("org")
-	// msp := queryParams.Get("msp")
-	// port := queryParams.Get("port")
-
-	//Initialize setup for Org1
 	// This settings now depend on the docker container and network settings.
 	//cryptoPath := "./../../crypto-config/peerOrganizations/" + org + ".com"
 	cryptoPath := "./crypto-config/peerOrganizations/" + org + ".com"
@@ -610,23 +625,28 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
-	// Bootstrap with an organization
-	// TEMPORARY
-	// TODO: Change to something that is stable
-	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
-
-	// Read the body of the request
-	reqBody, err := ioutil.ReadAll(r.Body)
+	// Retrieve the request element from the post request.
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		fmt.Println("Error while reading the request body")
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
 	}
 
-	// Create a map with the received data
+	token := payload["token"].(string)
+	mail := payload["mail"].(string)
+	CommonName := payload["commonname"].(string)
+	org := payload["org"].(string)
+	level := payload["level"].(string)
+
+	checkTokenAndBootstrap(token, w)
+
+	// Create a map with the received data for the chaincode method.
 	privateData := map[string][]byte{
-		"data": []byte(reqBody),
+		"data": []byte("{\"Mail\":\"" + mail + "\", \"CommonName\": \"" + CommonName + "\", \"Org\": \"" + org + ", \"Level\": \"" + level + "\"}"),
 	}
 
-	// Invoke the method with transient data
+	// Invoke the method with transient data.
 	network := setups.Gateway.GetNetwork("channel1")
 	contract := network.GetContract("user")
 	result, err := contract.Submit(
@@ -635,15 +655,11 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 		client.WithTransient(privateData),
 		client.WithEndorsingOrganizations(setups.MSPID),
 	)
-
-	// Console log
-	fmt.Println("Inserting data for %s", setups.MSPID)
-
-	// Check for errors
 	if err != nil {
 		fmt.Fprintf(w, "Error submitting transaction: %s", err)
 
 	}
+	fmt.Println("Inserting data for %s", setups.MSPID)
 
 	fmt.Println("Result: " + string(result))
 }
@@ -654,22 +670,29 @@ func removeUser(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
-	// TEMPORARY BOOTSTRAP
-	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
-
-	// Set the parameters
-	queryParams := r.URL.Query()
+	// Set the parameters.
 	chainCodeName := "user"
 	channelID := "channel1"
 	function := "removeUser"
-	data := queryParams.Get("data")
 
-	fmt.Printf("channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function, data)
+	fmt.Printf("channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
 
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
 
-	// Call the method using the received data
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	data := payload["data"].(string)
+
+	checkTokenAndBootstrap(token, w)
+
+	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
 	if err != nil {
 		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
@@ -696,23 +719,27 @@ func checkExistence(w http.ResponseWriter, r *http.Request) {
 	setupCorsResponse(&w, r)
 
 	// Set the parameters
-	queryParams := r.URL.Query()
 	chainCodeName := "user"
 	channelID := "channel1"
 	function := "checkExistence"
-	data := queryParams.Get("data")
-
-	fmt.Printf("	channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function, data)
-
-	// Bootstrap with an organization
-	// TEMPORARY
-	// TODO: Change to something that is stable
-	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
-
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
 
-	// Call the method using the received data
+	fmt.Printf("	channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
+
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	data := payload["data"].(string)
+
+	checkTokenAndBootstrap(token, w)
+
+	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
 	if err != nil {
 		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
@@ -730,7 +757,6 @@ func checkExistence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
-	return
 }
 
 // Allows to see all the users registered into the ledger.
@@ -739,20 +765,28 @@ func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
-	// TEMPORARY BOOTSTRAP
-	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
-
-	// Set parameters
+	// Set parameters.
 	chaincodeid := "user"
 	channelID := "channel1"
-	//function := queryParams.Get("function")
-	fmt.Printf("	channel: %s, chaincode: %s\n", channelID, chaincodeid)
+	function := "viewAllUsers"
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chaincodeid)
 
-	// Select the function to query
-	evaluateResponse, err := contract.EvaluateTransaction("viewAllUsers")
-	// Error check
+	fmt.Printf("	channel: %s, chaincode: %s\n", channelID, chaincodeid)
+
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+
+	checkTokenAndBootstrap(token, w)
+
+	// Select the function to query.
+	evaluateResponse, err := contract.EvaluateTransaction(function)
 	if err != nil {
 		fmt.Fprintf(w, "Error: %s", err)
 		return
@@ -767,26 +801,28 @@ func setOrgLevel(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
-	// TEMPORARY BOOTSTRAP
-	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
-
-	// Set the parameters
-	queryParams := r.URL.Query()
+	// Set the parameters.
 	chainCodeName := "user"
 	channelID := "channel1"
 	function := "setOrgLevel"
-	org := queryParams.Get("org")
-	level := queryParams.Get("level")
-
-	fmt.Printf("channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
-
-	fmt.Println("Org: " + org)
-	fmt.Println("Level: " + level)
-
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
+	fmt.Printf("channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
 
-	// Call the method using the received data
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	org := payload["org"].(string)
+	level := payload["level"].(string)
+
+	checkTokenAndBootstrap(token, w)
+
+	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(org, level))
 	if err != nil {
 		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
@@ -812,22 +848,28 @@ func createOrg(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
-	// Set the parameters
-	queryParams := r.URL.Query()
+	// Set the parameters.
 	chainCodeName := "user"
 	channelID := "channel1"
 	function := "createOrg"
-	data := queryParams.Get("data")
-
-	// TEMPORARY BOOTSTRAP
-	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
-
-	fmt.Printf("	channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function, data)
-
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
 
-	// Call the method using the received data
+	fmt.Printf("	channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
+
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	data := payload["data"].(string)
+
+	checkTokenAndBootstrap(token, w)
+
+	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
 	if err != nil {
 		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
@@ -853,22 +895,28 @@ func removeOrg(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
-	// TEMPORARY BOOTSTRAP
-	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
-
-	// Set the parameters
-	queryParams := r.URL.Query()
+	// Set the parameters.
 	chainCodeName := "user"
 	channelID := "channel1"
 	function := "removeOrg"
-	org := queryParams.Get("org")
-
-	fmt.Printf("channel: %s, chaincode: %s, function: %s, data: %s\n", channelID, chainCodeName, function)
-
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chainCodeName)
 
-	// Call the method using the received data
+	fmt.Printf("channel: %s, chaincode: %s, function: %s\n", channelID, chainCodeName, function)
+
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+	org := payload["org"].(string)
+
+	checkTokenAndBootstrap(token, w)
+
+	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(org))
 	if err != nil {
 		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
@@ -894,20 +942,27 @@ func viewAllOrgs(w http.ResponseWriter, r *http.Request) {
 
 	setupCorsResponse(&w, r)
 
-	// TEMPORARY BOOTSTRAP
-	setups.Bootstrap(orgsList[0].org, orgsList[0].msp, orgsList[0].port)
-
-	// Set parameters
+	// Set parameters.
 	chaincodeid := "user"
 	channelID := "channel1"
-	//function := queryParams.Get("function")
+	function := "viewAllOrgs"
 	fmt.Printf("	channel: %s, chaincode: %s\n", channelID, chaincodeid)
 	network := setups.Gateway.GetNetwork(channelID)
 	contract := network.GetContract(chaincodeid)
 
-	// Select the function to query
-	evaluateResponse, err := contract.EvaluateTransaction("viewAllOrgs")
-	// Error check
+	payload := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		return
+	}
+
+	token := payload["token"].(string)
+
+	checkTokenAndBootstrap(token, w)
+
+	// Select the function to query.
+	evaluateResponse, err := contract.EvaluateTransaction(function)
 	if err != nil {
 		fmt.Fprintf(w, "Error: %s", err)
 		return
