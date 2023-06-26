@@ -807,7 +807,7 @@ func (c *Chaincode) acceptRequest(stub shim.ChaincodeStubInterface, args []strin
 	}
 
 	// Retrieve applicant collection name
-	applicant := strings.Split(requestToAccept.Applicant, "#")
+	applicant := strings.Split(requestToAccept.Applicant, "@")
 	if len(applicant) != 2 {
 		return shim.Error("Error splitting applicant name!")
 	}

@@ -112,7 +112,7 @@ func Serve() {
 
 	// Rest resources that does not match with the chaincode methods.
 	http.HandleFunc("/view", view)
-	http.HandleFunc("/managerequest", ManageRequest)
+	http.HandleFunc("/managerequest", manageRequest)
 
 	//// Chaincode USER.
 	http.HandleFunc("/addUser", addUser)
@@ -133,6 +133,14 @@ func Serve() {
 // Add a user-token pair to the activeUserList.
 func addToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Calling addToken...")
+
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 
 	setupCorsResponse(&w, r)
 
@@ -173,6 +181,15 @@ func addToken(w http.ResponseWriter, r *http.Request) {
 // Remove user from the active user list.
 func removeToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Calling removeToken...")
+
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Retrieve the request element from the post request.
@@ -213,8 +230,16 @@ func seeToken(w http.ResponseWriter, r *http.Request) {
 }
 
 // Calls the methods "accept/deny" request.
-func ManageRequest(w http.ResponseWriter, r *http.Request) {
+func manageRequest(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request to accept/deny a sharing request")
+
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 
 	setupCorsResponse(&w, r)
 
@@ -233,7 +258,11 @@ func ManageRequest(w http.ResponseWriter, r *http.Request) {
 	method := payload["method"].(string)
 	dataid := payload["dataid"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	var function string
 	var requesterMSPID string
@@ -268,12 +297,12 @@ func ManageRequest(w http.ResponseWriter, r *http.Request) {
 
 	// Convert dataid from string to integer.
 	dataidInt, _ := strconv.ParseInt(dataid, 10, 64)
-
 	// Retrieve the MSPID from the request that need to be satisfied.
+	fmt.Println(sE[0])
 	for e := range sE {
 		if sE[e].Record.RequestId == dataidInt {
-			fmt.Println(strings.Split(sE[e].Record.Applicant, "#")[1])
-			requesterMSPID = strings.Split(sE[e].Record.Applicant, "#")[1]
+			fmt.Println(strings.Split(sE[e].Record.Applicant, "@")[1])
+			requesterMSPID = strings.Split(sE[e].Record.Applicant, "@")[1]
 		}
 	}
 
@@ -303,6 +332,14 @@ func ManageRequest(w http.ResponseWriter, r *http.Request) {
 // Calls the chaincode method 'insertData'.
 func insertData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for insertData")
+
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 
 	setupCorsResponse(&w, r)
 
@@ -355,6 +392,14 @@ func insertData(w http.ResponseWriter, r *http.Request) {
 func removeData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Receiving request for removeData")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Retrieve the request element from the post request.
@@ -370,7 +415,11 @@ func removeData(w http.ResponseWriter, r *http.Request) {
 	owner := payload["owner"].(string)
 	description := payload["description"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Create a map with the received data for the chaincode method.
 	privateData := map[string][]byte{
@@ -401,6 +450,14 @@ func removeData(w http.ResponseWriter, r *http.Request) {
 func getPrivateData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for getPrivateData")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Set parameters.
@@ -421,7 +478,11 @@ func getPrivateData(w http.ResponseWriter, r *http.Request) {
 
 	token := payload["token"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Select the function to query.
 	fmt.Println("Calling " + function)
@@ -439,6 +500,14 @@ func getPrivateData(w http.ResponseWriter, r *http.Request) {
 // Calls the 'requestData' method.
 func requestData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for requestData")
+
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 
 	setupCorsResponse(&w, r)
 
@@ -463,7 +532,11 @@ func requestData(w http.ResponseWriter, r *http.Request) {
 	token := payload["token"].(string)
 	data := payload["data"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
@@ -489,6 +562,14 @@ func requestData(w http.ResponseWriter, r *http.Request) {
 func view(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for view")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Set parameters
@@ -508,11 +589,15 @@ func view(w http.ResponseWriter, r *http.Request) {
 	token := payload["token"].(string)
 	function := payload["function"].(string)
 
-	fmt.Printf("Channel: %s, chaincode: %s, function: %s, token: %s\n", channelID, chaincodeid, function)
+	fmt.Printf("Channel: %s, chaincode: %s, function: %s\n", channelID, chaincodeid, function)
 
 	// Check if the token is valid and bootstrap the connection settings
 	// otherwise return with error.
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// To lower the function name.
 	function = strings.ToLower(function)
@@ -623,6 +708,14 @@ func (setup *OrgSetup) Initialize() error {
 func addUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for addUser")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Retrieve the request element from the post request.
@@ -639,7 +732,11 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	org := payload["org"].(string)
 	level := payload["level"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Create a map with the received data for the chaincode method.
 	privateData := map[string][]byte{
@@ -668,6 +765,14 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 func removeUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for removeUSer")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Set the parameters.
@@ -690,7 +795,11 @@ func removeUser(w http.ResponseWriter, r *http.Request) {
 	token := payload["token"].(string)
 	data := payload["data"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
@@ -716,6 +825,14 @@ func removeUser(w http.ResponseWriter, r *http.Request) {
 func checkExistence(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for checkExistence")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Set the parameters
@@ -737,7 +854,11 @@ func checkExistence(w http.ResponseWriter, r *http.Request) {
 	token := payload["token"].(string)
 	data := payload["data"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
@@ -763,6 +884,14 @@ func checkExistence(w http.ResponseWriter, r *http.Request) {
 func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for viewAllUsers")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Set parameters.
@@ -783,7 +912,11 @@ func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	token := payload["token"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Select the function to query.
 	evaluateResponse, err := contract.EvaluateTransaction(function)
@@ -798,6 +931,14 @@ func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 // It allows to change the level of the selected orgnization.
 func setOrgLevel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for setOrgLevel")
+
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 
 	setupCorsResponse(&w, r)
 
@@ -820,7 +961,11 @@ func setOrgLevel(w http.ResponseWriter, r *http.Request) {
 	org := payload["org"].(string)
 	level := payload["level"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(org, level))
@@ -846,6 +991,14 @@ func setOrgLevel(w http.ResponseWriter, r *http.Request) {
 func createOrg(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for createOrg")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Set the parameters.
@@ -867,7 +1020,11 @@ func createOrg(w http.ResponseWriter, r *http.Request) {
 	token := payload["token"].(string)
 	data := payload["data"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(data))
@@ -893,6 +1050,14 @@ func createOrg(w http.ResponseWriter, r *http.Request) {
 func removeOrg(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for removeOrg")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Set the parameters.
@@ -914,7 +1079,11 @@ func removeOrg(w http.ResponseWriter, r *http.Request) {
 	token := payload["token"].(string)
 	org := payload["org"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Call the method using the received data.
 	txn_proposal, err := contract.NewProposal(function, client.WithArguments(org))
@@ -940,6 +1109,14 @@ func removeOrg(w http.ResponseWriter, r *http.Request) {
 func viewAllOrgs(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received request for viewAllOrgs")
 
+	// Checks if the method used is POST
+	isHttp := isHttpMethodPost(w, r)
+	if isHttp == false {
+		fmt.Println("Error performing the request. It must be a POST request.")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	setupCorsResponse(&w, r)
 
 	// Set parameters.
@@ -959,7 +1136,11 @@ func viewAllOrgs(w http.ResponseWriter, r *http.Request) {
 
 	token := payload["token"].(string)
 
-	checkTokenAndBootstrap(token, w)
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Select the function to query.
 	evaluateResponse, err := contract.EvaluateTransaction(function)
@@ -1119,4 +1300,16 @@ func checkTokenAndBootstrap(token string, w http.ResponseWriter) (ret int) {
 	}
 
 	return 1
+}
+
+// # isHttpMethodPost
+//
+// This function returns true if the Http methid used to perform the request is
+// POST. In all the other cases if returns false.
+func isHttpMethodPost(w http.ResponseWriter, r *http.Request) (b bool) {
+	if r.Method == http.MethodPost {
+		return true
+	} else {
+		return false
+	}
 }
