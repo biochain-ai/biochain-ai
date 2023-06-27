@@ -197,11 +197,17 @@ func removeToken(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	token := payload["token"].(string)
 	flag := false
+	ret := checkTokenAndBootstrap(token, w)
+	if ret == 1 {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	// Remove the user from the activeUserList and keep al the others.
 	for i, u := range activeUserList {
@@ -213,11 +219,13 @@ func removeToken(w http.ResponseWriter, r *http.Request) {
 
 	if !flag {
 		fmt.Fprintf(w, "Error: Token not found!")
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	fmt.Println("Token deleted successfully!")
 	fmt.Println("End remove token...")
+	w.WriteHeader(http.StatusOK)
 }
 
 // Return all the elements in the activeUserList.
@@ -251,6 +259,7 @@ func manageRequest(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -327,6 +336,7 @@ func manageRequest(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Result: " + string(result))
 	fmt.Println("End " + method + " sharing request")
+	w.WriteHeader(http.StatusOK)
 }
 
 // Calls the chaincode method 'insertData'.
@@ -348,6 +358,7 @@ func insertData(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -407,6 +418,7 @@ func removeData(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -444,6 +456,7 @@ func removeData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("Result: " + string(result))
+	w.WriteHeader(http.StatusOK)
 }
 
 // Calls the 'getPrivateData' method.
@@ -473,6 +486,7 @@ func getPrivateData(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -495,6 +509,7 @@ func getPrivateData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Response: %s", evaluateResponse)
+	w.WriteHeader(http.StatusOK)
 }
 
 // Calls the 'requestData' method.
@@ -526,6 +541,7 @@ func requestData(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -556,6 +572,7 @@ func requestData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
+	w.WriteHeader(http.StatusOK)
 }
 
 // Calls the 'view' methods.
@@ -583,6 +600,7 @@ func view(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -648,6 +666,7 @@ func view(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("End view function")
+	w.WriteHeader(http.StatusOK)
 }
 
 // Bootstrap function.
@@ -723,6 +742,7 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -759,6 +779,7 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Inserting data for %s", setups.MSPID)
 
 	fmt.Println("Result: " + string(result))
+	w.WriteHeader(http.StatusOK)
 }
 
 // Delete the user from the ledger.
@@ -789,6 +810,7 @@ func removeUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -819,6 +841,7 @@ func removeUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
+	w.WriteHeader(http.StatusOK)
 }
 
 // Given the email address checks if the user is present in the ledger.
@@ -848,6 +871,7 @@ func checkExistence(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -878,6 +902,7 @@ func checkExistence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
+	w.WriteHeader(http.StatusOK)
 }
 
 // Allows to see all the users registered into the ledger.
@@ -907,6 +932,7 @@ func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -926,6 +952,7 @@ func viewAllUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Response: %s", evaluateResponse)
+	w.WriteHeader(http.StatusOK)
 }
 
 // It allows to change the level of the selected orgnization.
@@ -954,6 +981,7 @@ func setOrgLevel(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -985,6 +1013,7 @@ func setOrgLevel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
+	w.WriteHeader(http.StatusOK)
 }
 
 // Calls the 'createOrg' method
@@ -1014,6 +1043,7 @@ func createOrg(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -1044,6 +1074,7 @@ func createOrg(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
+	w.WriteHeader(http.StatusOK)
 }
 
 // Calls the 'removeOrg' method
@@ -1073,6 +1104,7 @@ func removeOrg(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -1103,6 +1135,7 @@ func removeOrg(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Transaction ID : %s Response: %s", txn_committed.TransactionID(), txn_endorsed.Result())
+	w.WriteHeader(http.StatusOK)
 }
 
 // Allows to see all the orgs registered into the ledger.
@@ -1131,6 +1164,7 @@ func viewAllOrgs(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Fprintf(w, "Error: Failed to decode request body "+err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -1150,6 +1184,7 @@ func viewAllOrgs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Response: %s", evaluateResponse)
+	w.WriteHeader(http.StatusOK)
 }
 
 // //////////////////////////////////////////////////////////////////////////////

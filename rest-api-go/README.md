@@ -7,6 +7,9 @@ contracts in a way described here. This is done in order to simplify the
 creation and the use of chaincodes, since they do not have to make calls to 
 eachother but this server will take care of everything instead.
 
+All the possible request must be perform using an HTTP POST request, passing 
+the necessary data using data fields in a Json format. All the others HTTP 
+methods are refused by the server.
 ## Rest Endpoints
  - insertData
  - removeData
@@ -24,6 +27,9 @@ eachother but this server will take care of everything instead.
  - setOrgLevel
  - createOrg
  - removeOrg
+ - addToken
+ - removeToken
+ - seeToken
 
 ### insertData
 It allows to insert data into public ledger and into the private collection
@@ -71,3 +77,12 @@ It allows to change the organization level of one organization.
 It allows to create a new organization.
 ### removeOrg
 It allows to remove an organization. This deletes all the users related to it.
+### addToken
+This method allows to add a token into the active token list. This list is used to keep track of all the users logged in.
+### removeToken
+It alloes to remove a token at the and of the session. The token must be
+present in the list to be removed.
+
+### seeToken
+This is a DEBUG endpoint. It is used to print into the Rest server console
+the list of all the token related to the users logged in.
