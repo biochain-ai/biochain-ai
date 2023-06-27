@@ -4,7 +4,7 @@
   include('config.php');
   if(!isset($_SESSION['access_token'])) {
    //Create a URL to obtain user authorization
-   $google_login_btn = '<a href="'.$google_client->createAuthUrl().'">Effettua il login</a>';
+   $google_login_btn = '<a href="'.$google_client->createAuthUrl().'">Login</a>';
   } else {
  
     header("Location: oauth2callback.php");
@@ -17,8 +17,9 @@
  </head>
  <body>
   <div class="container">
+    <h1 align="center">Benvenutə su Biochain-AI</h1>
    <br />
-   <h2 align="center">PHP Login With Google</h2>
+   <h2 align="center">Effettua il login con Google</h2>
    <br />
    <div class="panel panel-default">
    <?php

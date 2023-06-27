@@ -740,7 +740,7 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 
 	// Create a map with the received data for the chaincode method.
 	privateData := map[string][]byte{
-		"data": []byte("{\"Mail\":\"" + mail + "\", \"CommonName\": \"" + CommonName + "\", \"Org\": \"" + org + ", \"Level\": \"" + level + "\"}"),
+		"data": []byte("{\"mail\":\"" + mail + "\", \"commonname\": \"" + CommonName + "\", \"org\": \"" + org + "\", \"level\":\"" + level + "\"}"),
 	}
 
 	// Invoke the method with transient data.

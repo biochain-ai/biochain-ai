@@ -146,15 +146,35 @@ if(isset($_GET["code"])){
                 <input type="text" name="commonname" id="commonname" /><br />
                 <label for="org">Organizzazione</label>
                 <input type="text" name="org" id="org"/><br />
+                <label for="level">Livello</label>
+                <input type="text" name="level" id="level"/><br />
                 <input name="" type="submit" value="Inserisci l\'utente" />
             </form>
             
+            <hr>
+            <h4>Richiedi dato</h4>
+            <form name="requestDataForm" id="requestDataForm" onSubmit="JavaScript:requestData()">
+                <label for="dato">Dato</label>
+                <input type="text" name="dato" id="dato" /><br />
+                <input name="" type="submit" value="Richiedi il dato" />
+            </form>
+
             <hr>
         
             <br>
             <button onclick="viewCatalogue()">Vedi il catalogo</button>
             <br>
+            <br>
             <button onclick="viewAllUsers()">Visualizza tutti gli utenti</button>
+            <br>
+            <br>
+            <button onclick="viewAllOrgs()">Visualizza le organizzazioni</button>
+            <br>
+            <br>
+            <button onclick="viewRequests()">Visualizza le richieste dell\'organizzazione</button>
+            <br>
+            <br>
+            <button onclick="viewAllRequests()">Visualizza tuttte le richieste</button>
             <br>
             
             
@@ -188,20 +208,20 @@ function insertData() {
 
     // Definisci il tipo di richiesta e l'URL di destinazione
     xhr.open("POST", "http://localhost:3000/insertData", true);
-    xhr.setRequestHeader("Accept", "application/json");
-    xhr.setRequestHeader("Content-Type", "application/json");
+    // xhr.setRequestHeader("Accept", "application/json");
+    // xhr.setRequestHeader("Content-Type", "application/json");
 
     // Imposta la funzione di callback per gestire la risposta
     xhr.onload = function() {
         if (xhr.status === 200) {
-        // La richiesta è stata completata con successo
-        var response = xhr.responseText;
-        // Puoi manipolare la risposta qui come desideri
-        //console.log(response);
-        // Scrive la risposta in un paragrafo	
-        document.getElementById("res").textContent = response
-        // Si è verificato un errore durante la richiesta
-        console.error("Errore nella richiesta. Codice: " + xhr.status);
+            // La richiesta è stata completata con successo
+            var response = xhr.responseText;
+            // Puoi manipolare la risposta qui come desideri
+            console.log(response);
+            document.getElementById("res").textContent = response
+        } else {
+            // Si è verificato un errore durante la richiesta
+            console.error("Errore nella richiesta. Codice: " + xhr.status);
         }
     };
 
@@ -210,17 +230,41 @@ function insertData() {
     var description = document.getElementById("description").value;
     var data = document.getElementById("data").value;
 
-    // Crea l'oggetto dei dati da inviare come JSON
-    // var obj = {
-    //     name: name,
-    //     description: description,
-    //     data: data,
-    //     token: token
-    // };
-
     // Invia la richiesta
     xhr.send(JSON.stringify({"name": name, "description": description, "data": data, "token": token}));
     var insertForm = document.getElementById("insertDataForm");
+    insertForm.reset();
+}
+function requestData() {
+    event.preventDefault();
+    var xhr = new XMLHttpRequest();
+    var token='<?php echo $_SESSION["access_token"];?>';
+
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("POST", "http://localhost:3000/requestData", true);
+    // xhr.setRequestHeader("Accept", "application/json");
+    // xhr.setRequestHeader("Content-Type", "application/json");
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            // La richiesta è stata completata con successo
+            var response = xhr.responseText;
+            // Puoi manipolare la risposta qui come desideri
+            console.log(response);
+            document.getElementById("res").textContent = response
+        } else {
+            // Si è verificato un errore durante la richiesta
+            console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Leggi i dati dal form
+    var data = document.getElementById("dato").value;
+
+    // Invia la richiesta
+    xhr.send(JSON.stringify({"data": data, "token": token}));
+    var insertForm = document.getElementById("requestDataForm");
     insertForm.reset();
 }
 
@@ -229,22 +273,24 @@ function addUser() {
     
     var xhr = new XMLHttpRequest();
 
+    var token='<?php echo $_SESSION["access_token"];?>';
+
     // Definisci il tipo di richiesta e l'URL di destinazione
     xhr.open("POST", "http://localhost:3000/addUser", true);
-    xhr.setRequestHeader("Accept", "application/json");
-    xhr.setRequestHeader("Content-Type", "application/json");
+    // xhr.setRequestHeader("Accept", "application/json");
+    // xhr.setRequestHeader("Content-Type", "application/json");
 
     // Imposta la funzione di callback per gestire la risposta
     xhr.onload = function() {
         if (xhr.status === 200) {
-        // La richiesta è stata completata con successo
-        var response = xhr.responseText;
-        // Puoi manipolare la risposta qui come desideri
-        //console.log(response);
-        // Scrive la risposta in un paragrafo	
-        document.getElementById("res").textContent = response
-        // Si è verificato un errore durante la richiesta
-        console.error("Errore nella richiesta. Codice: " + xhr.status);
+            // La richiesta è stata completata con successo
+            var response = xhr.responseText;
+            // Puoi manipolare la risposta qui come desideri
+            console.log(response);
+            document.getElementById("res").textContent = response
+        } else {
+            // Si è verificato un errore durante la richiesta
+            console.error("Errore nella richiesta. Codice: " + xhr.status);
         }
     };
 
@@ -252,14 +298,15 @@ function addUser() {
     var mail = document.getElementById("mail").value;
     var commonname = document.getElementById("commonname").value;
     var org = document.getElementById("org").value;
-    var level = "0";
+    var level = document.getElementById("level").value;
 
     // Crea l'oggetto dei dati da inviare come JSON
     var obj = {
-        Mail: mail,
-        Org: org,
-        CommonName: commonname,
-        Level: level
+        token: token,
+        mail: mail,
+        org: org,
+        commonname: commonname,
+        level: level
     };
 
     // Invia la richiesta
@@ -274,31 +321,40 @@ function viewCatalogue() {
 
     var token='<?php echo $_SESSION["access_token"];?>';
     // Definisci il tipo di richiesta e l'URL di destinazione
-    xhr.open("GET", "http://localhost:3000/view?function=catalogue&token="+token, true);
+    xhr.open("POST", "http://localhost:3000/view", true);
 
     // Imposta la funzione di callback per gestire la risposta
     xhr.onload = function() {
         if (xhr.status === 200) {
-        // La richiesta è stata completata con successo
-        var response = xhr.responseText;
-        // Puoi manipolare la risposta qui come desideri
-        console.log(response);
-        document.getElementById("res").textContent = response
+            // La richiesta è stata completata con successo
+            var response = xhr.responseText;
+            // Puoi manipolare la risposta qui come desideri
+            console.log(response);
+            document.getElementById("res").textContent = response
         } else {
-        // Si è verificato un errore durante la richiesta
-        console.error("Errore nella richiesta. Codice: " + xhr.status);
+            // Si è verificato un errore durante la richiesta
+            console.error("Errore nella richiesta. Codice: " + xhr.status);
         }
     };
 
+    // Crea l'oggetto dei dati da inviare come JSON
+    var obj = {
+        token: token,
+        function: "catalogue",
+    };
+
     // Invia la richiesta
-    xhr.send();
+    xhr.send(JSON.stringify(obj));
 }
+
 function viewAllUsers(){
     // Crea l'oggetto XMLHttpRequest
     var xhr = new XMLHttpRequest();
 
+    var token='<?php echo $_SESSION["access_token"];?>';
+
     // Definisci il tipo di richiesta e l'URL di destinazione
-    xhr.open("GET", "http://localhost:3000/viewAllUsers", true);
+    xhr.open("POST", "http://localhost:3000/viewAllUsers", true);
 
     // Imposta la funzione di callback per gestire la risposta
     xhr.onload = function() {
@@ -314,8 +370,109 @@ function viewAllUsers(){
         }
     };
 
+    // Crea l'oggetto dei dati da inviare come JSON
+    var obj = {
+        token: token,
+    };
+
     // Invia la richiesta
-    xhr.send();
+    xhr.send(JSON.stringify(obj));
+}
+
+function viewAllOrgs(){
+    // Crea l'oggetto XMLHttpRequest
+    var xhr = new XMLHttpRequest();
+
+    var token='<?php echo $_SESSION["access_token"];?>';
+
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("POST", "http://localhost:3000/viewAllOrgs", true);
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+        // La richiesta è stata completata con successo
+        var response = xhr.responseText;
+        // Puoi manipolare la risposta qui come desideri
+        console.log(response);
+        document.getElementById("res").textContent = response
+        } else {
+        // Si è verificato un errore durante la richiesta
+        console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Crea l'oggetto dei dati da inviare come JSON
+    var obj = {
+        token: token,
+    };
+
+    // Invia la richiesta
+    xhr.send(JSON.stringify(obj));
+}
+
+function viewRequests(){
+    // Crea l'oggetto XMLHttpRequest
+    var xhr = new XMLHttpRequest();
+
+    var token='<?php echo $_SESSION["access_token"];?>';
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("POST", "http://localhost:3000/view", true);
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            // La richiesta è stata completata con successo
+            var response = xhr.responseText;
+            // Puoi manipolare la risposta qui come desideri
+            console.log(response);
+            document.getElementById("res").textContent = response
+        } else {
+            // Si è verificato un errore durante la richiesta
+            console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Crea l'oggetto dei dati da inviare come JSON
+    var obj = {
+        token: token,
+        function: "requests",
+    };
+
+    // Invia la richiesta
+    xhr.send(JSON.stringify(obj));
+}
+
+function viewAllRequests(){
+    // Crea l'oggetto XMLHttpRequest
+    var xhr = new XMLHttpRequest();
+
+    var token='<?php echo $_SESSION["access_token"];?>';
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("POST", "http://localhost:3000/view", true);
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            // La richiesta è stata completata con successo
+            var response = xhr.responseText;
+            // Puoi manipolare la risposta qui come desideri
+            console.log(response);
+            document.getElementById("res").textContent = response
+        } else {
+            // Si è verificato un errore durante la richiesta
+            console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Crea l'oggetto dei dati da inviare come JSON
+    var obj = {
+        token: token,
+        function: "allrequests",
+    };
+
+    // Invia la richiesta
+    xhr.send(JSON.stringify(obj));
 }
 	</script>
 </body>
