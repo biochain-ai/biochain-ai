@@ -507,6 +507,7 @@ func getPrivateData(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error creating txn proposal: %s", err)
 		return
 	}
+	// Changed message size dimension to allow bigger data elements.
 	txn_endorsed, err := txn_proposal.Endorse(grpc.MaxCallRecvMsgSize(10000000), grpc.MaxCallSendMsgSize(10000000))
 	if err != nil {
 		fmt.Fprintf(w, "Error endorsing txn: %s", err)
