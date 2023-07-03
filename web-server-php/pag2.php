@@ -6,5 +6,5 @@ if(isset($_SESSION['access_token'])){
 else{
     echo "Non sei autorizzato a visualizzare questa pagina";
 }
-echo "<a href='http://localhost:8080/index.php'>Torna alla home</a>"
+echo "<br><a href='http://localhost:8080/index.php'>Torna alla home</a>"
 ?>

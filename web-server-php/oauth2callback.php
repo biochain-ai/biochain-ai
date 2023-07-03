@@ -151,7 +151,7 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
     echo "</p>";
 
     echo "</div>";
-    echo "<a href='http://localhost:8080/pag2.php'>Vai a pagina 2</a>";
+    echo "<a href='http://localhost:8080/pag2.php'>Vai a pagina 2</a><br>";
     echo "<a href='http://localhost:8080/logout.php'>Logout</a>";
 
     echo '
