@@ -45,4 +45,4 @@ if(isset($_SESSION['access_token'])){
 }
 ?>
 <br>
-<a href='http://pc169.math.unipr.it:443/'>Torna alla home</a>
+<a href='https://pc169.math.unipr.it:443/'>Torna alla home</a>
