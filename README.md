@@ -4,11 +4,20 @@ This project aims to create a system that allows different organizations to secu
 ## Project structure
 The project consists into three main components which are the Hyperledger Blockchain, the Rest server, and the Web server.
 
-The Hyperledger blockchain has a series of server communicating with eachother that alloews to run custom smart contract called Chaincodes, written using Golang.
+The Hyperledger blockchain has a series of server communicating with eachother that allows to run custom smart contract called Chaincodes, written using Golang.
 
 The Rest server is an API server that is used as single point of communication for the blockchain. Every request must be made using this API server. It is written in Golang.
 
-The Web server allows to have a graphical interface useful to communicato the blockchain by sending API requests to the Rest server. It is written in Golang.
+The Web server allows to have a graphical interface useful to communicate the blockchain by sending API requests to the Rest server. 
+It takes care of session management. It is written in PHP.
+
+## Requirements
+- Docker
+- Hyperledger Fabric samples
+- For the web server: Google client ID and SECRET for the OAuth2 client which is
+the web server. They must be saved as Env variable into the host running the
+server
+
 
 ## User guide (to start a local configuration)
 Use this simple commands to start, stop, and communicate with the network

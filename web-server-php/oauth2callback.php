@@ -135,7 +135,7 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
 
                 echo "<h3>Non sei un utente registrato, non puoi effettuare operazioni sul sistema.</h3>";
                 echo "<h3>Contatta l'amministratore per autorizzarti.</h3>";
-                echo "<a href='http://localhost:8080/logout.php'>Logout</a>";
+                echo "<a href='http://pc169.math.unipr.it:8080/logout.php'>Logout</a>";
                 return;
             }
         }
@@ -151,8 +151,8 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
     echo "</p>";
 
     echo "</div>";
-    echo "<a href='http://localhost:8080/pag2.php'>Vai a pagina 2</a>";
-    echo "<a href='http://localhost:8080/logout.php'>Logout</a>";
+    echo "<a href='http://pc169.math.unipr.it:8080/pag2.php'>Vai a pagina 2</a><br>";
+    echo "<a href='http://pc169.math.unipr.it:8080/logout.php'>Logout</a>";
 
     echo '
     <hr>
@@ -163,7 +163,8 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
         <label for="lastname">Descrizione</label>
         <input type="text" name="description" id="description"/><br />
         <label for="lastname">Dato</label>
-        <input type="text" name="data" id="data"/><br />
+        <!-- <input type="text" name="data" id="data"/><br /> -->
+        <input name="data" id="data-file" type="file" /><br />
         <input name="" type="submit" value="Inserisci il dato" />
     </form>
     
@@ -198,6 +199,9 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
     <button onclick="viewAllUsers()">Visualizza tutti gli utenti</button>
     <br>
     <br>
+    <button onclick="viewPersonalData()">Visualizza i dati personali</button>
+    <br>
+    <br>
     <button onclick="viewAllOrgs()">Visualizza le organizzazioni</button>
     <br>
     <br>
@@ -215,13 +219,14 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
     ';
 } else if (!isset($_SESSION['access_token'])) {
     echo "Non hai l'autorizzazione!";
-    echo "<br><a href='http://localhost:8080/index.php'>Torna alla pagina iniziale</a>";
+    echo "<br><a href='http://pc169.math.unipr.it:8080/index.php'>Torna alla pagina iniziale</a>";
 } 
 ?>
 
 <script>
 function insertData() {
     event.preventDefault();
+    const reader = new FileReader();
     var xhr = new XMLHttpRequest();
     var token='<?php echo $_SESSION["access_token"];?>';
 
@@ -247,10 +252,28 @@ function insertData() {
     // Leggi i dati dal form
     var name = document.getElementById("name").value;
     var description = document.getElementById("description").value;
-    var data = document.getElementById("data").value;
+    // var data = document.getElementById("data").value;
+    var data_file = document.getElementById("data-file").files[0];
+    
+    var data_file_encoded;
+
+    reader.addEventListener(
+        "load",
+        () => {
+            // convert image file to base64 string
+            data_file_encoded = reader.result;
+            xhr.send(JSON.stringify({"name": name, "description": description, "data": data_file_encoded, "token": token}));
+            // document.write(reader.result);
+        },
+        false
+    );
+
+    if (data_file) {
+        reader.readAsDataURL(data_file);
+    }
 
     // Invia la richiesta
-    xhr.send(JSON.stringify({"name": name, "description": description, "data": data, "token": token}));
+    // xhr.send(JSON.stringify({"name": name, "description": description, "data": data_file_encoded, "token": token}));
     var insertForm = document.getElementById("insertDataForm");
     insertForm.reset();
 }
@@ -488,6 +511,37 @@ function viewAllRequests(){
     var obj = {
         token: token,
         function: "allrequests",
+    };
+
+    // Invia la richiesta
+    xhr.send(JSON.stringify(obj));
+}
+
+function viewPersonalData() {
+    // Crea l'oggetto XMLHttpRequest
+    var xhr = new XMLHttpRequest();
+
+    var token='<?php echo $_SESSION["access_token"];?>';
+    // Definisci il tipo di richiesta e l'URL di destinazione
+    xhr.open("POST", "http://localhost:3000/getPrivateData", true);
+
+    // Imposta la funzione di callback per gestire la risposta
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            // La richiesta è stata completata con successo
+            var response = xhr.responseText;
+            // Puoi manipolare la risposta qui come desideri
+            console.log(response);
+            document.getElementById("res").textContent = response
+        } else {
+            // Si è verificato un errore durante la richiesta
+            console.error("Errore nella richiesta. Codice: " + xhr.status);
+        }
+    };
+
+    // Crea l'oggetto dei dati da inviare come JSON
+    var obj = {
+        token: token,
     };
 
     // Invia la richiesta
