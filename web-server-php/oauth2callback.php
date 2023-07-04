@@ -135,7 +135,7 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
 
                 echo "<h3>Non sei un utente registrato, non puoi effettuare operazioni sul sistema.</h3>";
                 echo "<h3>Contatta l'amministratore per autorizzarti.</h3>";
-                echo "<a href='http://pc169.math.unipr.it:8080/logout.php'>Logout</a>";
+                echo "<a href='http://pc169.math.unipr.it:443/logout.php'>Logout</a>";
                 return;
             }
         }
@@ -151,8 +151,8 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
     echo "</p>";
 
     echo "</div>";
-    echo "<a href='http://pc169.math.unipr.it:8080/pag2.php'>Vai a pagina 2</a><br>";
-    echo "<a href='http://pc169.math.unipr.it:8080/logout.php'>Logout</a>";
+    echo "<a href='http://pc169.math.unipr.it:443/pag2.php'>Vai a pagina 2</a><br>";
+    echo "<a href='http://pc169.math.unipr.it:443/logout.php'>Logout</a>";
 
     echo '
     <hr>
@@ -219,7 +219,7 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
     ';
 } else if (!isset($_SESSION['access_token'])) {
     echo "Non hai l'autorizzazione!";
-    echo "<br><a href='http://pc169.math.unipr.it:8080/index.php'>Torna alla pagina iniziale</a>";
+    echo "<br><a href='http://pc169.math.unipr.it:443/index.php'>Torna alla pagina iniziale</a>";
 } 
 ?>
 
