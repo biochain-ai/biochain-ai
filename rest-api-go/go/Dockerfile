@@ -16,6 +16,7 @@ COPY connection.json ./
 COPY /web ./web
 COPY /wallets ./wallets
 COPY /crypto-config ./crypto-config
+COPY restserver.* ./
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -o /rest-api-server

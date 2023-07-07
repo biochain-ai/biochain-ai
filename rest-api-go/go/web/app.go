@@ -124,8 +124,8 @@ func Serve() {
 	http.HandleFunc("/removeOrg", removeOrg)
 	http.HandleFunc("/viewAllOrgs", viewAllOrgs)
 
-	fmt.Println("Listening (http://localhost:3000/)...")
-	if err := http.ListenAndServe(":3000", nil); err != nil {
+	fmt.Println("Listening (https://localhost:3000/)...")
+	if err := http.ListenAndServeTLS(":3000", "./restserver.cert", "./restserver.key", nil); err != nil {
 		fmt.Println(err)
 	}
 }

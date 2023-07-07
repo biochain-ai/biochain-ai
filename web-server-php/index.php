@@ -8,7 +8,7 @@ function addToken($email, $access_token) {
     $curl = curl_init();
 
     curl_setopt_array($curl, array(
-    CURLOPT_URL => 'http://rest-api-go:3000/addToken',
+    CURLOPT_URL => 'https://pc169.math.unipr.it:3000/addToken',
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_ENCODING => '',
     CURLOPT_MAXREDIRS => 10,
@@ -42,96 +42,6 @@ function addToken($email, $access_token) {
     return $http_code;
 }
 
-//This $_GET["code"] variable value received after user has login into their 
-//Google Account redirct to PHP script then this variable value has been received
-if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
-   
-  if(isset($_GET['code'])){
-      //It will Attempt to exchange a code for an valid authentication token.
-      $token = $google_client->fetchAccessTokenWithAuthCode($_GET["code"]);
-      //This condition will check there is any error occur during geting 
-      //authentication token. If there is no any error occur then it will
-      //execute if block of code/
-          
-      if(!isset($token['error'])){
-          //Set the access token used for requests
-          $google_client->setAccessToken($token['access_token']);
-          //Store "access_token" value in $_SESSION variable for future use.
-          $_SESSION['access_token'] = $token['access_token'];
-          //Create Object of Google Service OAuth 2 class
-          $google_service = new Google_Service_Oauth2($google_client);
-          //Get user profile data from google
-          $data = $google_service->userinfo->get();
-          //Below you can find Get profile data and store into $_SESSION variable
-
-          // Send token to the Rest Api
-          // $request = curl_init();
-
-          // curl_setopt($request, CURLOPT_URL,"http://localhost:3000/addToken");
-          // curl_setopt($request, CURLOPT_POST, 1);
-          // curl_setopt($request, CURLOPT_POSTFIELDS, 
-          //          http_build_query(array('email' => $data['email'], 'token' => $token['access_token'])));
-
-          // // catch the response
-          // curl_setopt($request, CURLOPT_RETURNTRANSFER, 1);
-          // curl_setopt($request, CURLOPT_SSL_VERIFYPEER, 0);
-          // curl_setopt($request, CURLOPT_SSL_VERIFYHOST, 0);
-
-          // $response = curl_exec($request);
-
-          // curl_close ($request);
-
-          // Set the access token into the Rest server.
-          $http_code = addToken($data['email'], $token['access_token']);
-          
-          // // GET REQUEST
-          // $curlSES=curl_init(); 
-          // curl_setopt($curlSES,CURLOPT_URL,"http://localhost:3000/addToken?email=".$data['email']."&token=".$token['access_token']);
-          // curl_setopt($curlSES,CURLOPT_RETURNTRANSFER, true);
-          // $result=curl_exec($curlSES);
-          // curl_close($curlSES);
-          // echo $result;
-
-          if ($http_code == 200) {
-              $_SESSION['registered'] = TRUE;
-              
-              if(!empty($data['given_name'])){
-                  $_SESSION['user_first_name'] = $data['given_name'];
-              }
-
-              if(!empty($data['family_name'])){
-                  $_SESSION['user_last_name'] = $data['family_name'];
-              }
-
-              if(!empty($data['email'])){
-                  $_SESSION['user_email_address'] = $data['email'];
-              }
-
-              if(!empty($data['gender'])){
-                  $_SESSION['user_gender'] = $data['gender'];
-              }
-              
-              if(!empty($data['picture'])){
-                  $_SESSION['user_image'] = $data['picture'];
-              }
-          }
-          else{
-              $_SESSION['registered'] = FALSE;
-
-              echo "<h3>Non sei un utente registrato, non puoi effettuare operazioni sul sistema.</h3>";
-              echo "<h3>Contatta l'amministratore per autorizzarti.</h3>";
-              echo "<a href='https://pc169.math.unipr.it:443/logout.php'>Logout</a>";
-              return;
-          }
-      }
-  }
-} else if (!isset($_SESSION['access_token'])) {
-  loadPage('pages/unauthorized.php');
-  // echo "Non hai l'autorizzazione!";
-  // echo "<br><a href='https://pc169.math.unipr.it:443/index.php'>Torna alla pagina iniziale</a>";
-  return;
-} 
-
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -159,16 +69,16 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
             <a class="nav-link active" aria-current="page" href="#" data-page="pages/login">Login</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" data-page="pages/newData">Insert new data</a>
+            <a class="nav-link" href="#" id="insertData" data-page="pages/newData">Insert new data</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" data-page="pages/newUser">Insert new user</a>
+            <a class="nav-link" href="#" id="insertUser" data-page="pages/newUser">Insert new user</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" data-page="pages/catalog">Catalog</a>
+            <a class="nav-link" href="#" id="catalog" data-page="pages/catalog">Catalog</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" data-page="pages/users">Users</a>
+            <a class="nav-link" href="#" id="users" data-page="pages/users">Users</a>
           </li>
         </ul>
       </div>
@@ -180,7 +90,103 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
       <!-- Colonna del contenuto della pagina -->
       <div class="col-md-12">
         <div class="p-5">
-          <div id="content"><?php include('pages/login.php'); ?></div>
+          <div id="content">
+            <?php
+            //This $_GET["code"] variable value received after user has login into their 
+            //Google Account redirct to PHP script then this variable value has been received
+            if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
+              
+              if(isset($_GET['code'])){
+                  //It will Attempt to exchange a code for an valid authentication token.
+                  $token = $google_client->fetchAccessTokenWithAuthCode($_GET["code"]);
+                  //This condition will check there is any error occur during geting 
+                  //authentication token. If there is no any error occur then it will
+                  //execute if block of code/
+                      
+                  if(!isset($token['error'])){
+                      //Set the access token used for requests
+                      $google_client->setAccessToken($token['access_token']);
+                      //Store "access_token" value in $_SESSION variable for future use.
+                      $_SESSION['access_token'] = $token['access_token'];
+                      //Create Object of Google Service OAuth 2 class
+                      $google_service = new Google_Service_Oauth2($google_client);
+                      //Get user profile data from google
+                      $data = $google_service->userinfo->get();
+                      //Below you can find Get profile data and store into $_SESSION variable
+
+                      // Send token to the Rest Api
+                      // $request = curl_init();
+
+                      // curl_setopt($request, CURLOPT_URL,"http://localhost:3000/addToken");
+                      // curl_setopt($request, CURLOPT_POST, 1);
+                      // curl_setopt($request, CURLOPT_POSTFIELDS, 
+                      //          http_build_query(array('email' => $data['email'], 'token' => $token['access_token'])));
+
+                      // // catch the response
+                      // curl_setopt($request, CURLOPT_RETURNTRANSFER, 1);
+                      // curl_setopt($request, CURLOPT_SSL_VERIFYPEER, 0);
+                      // curl_setopt($request, CURLOPT_SSL_VERIFYHOST, 0);
+
+                      // $response = curl_exec($request);
+
+                      // curl_close ($request);
+
+                      // Set the access token into the Rest server.
+                      $http_code = addToken($data['email'], $token['access_token']);
+                      
+                      // // GET REQUEST
+                      // $curlSES=curl_init(); 
+                      // curl_setopt($curlSES,CURLOPT_URL,"http://localhost:3000/addToken?email=".$data['email']."&token=".$token['access_token']);
+                      // curl_setopt($curlSES,CURLOPT_RETURNTRANSFER, true);
+                      // $result=curl_exec($curlSES);
+                      // curl_close($curlSES);
+                      // echo $result;
+
+                      if ($http_code == 200) {
+                          $_SESSION['registered'] = TRUE;
+                          
+                          if(!empty($data['given_name'])){
+                              $_SESSION['user_first_name'] = $data['given_name'];
+                          }
+
+                          if(!empty($data['family_name'])){
+                              $_SESSION['user_last_name'] = $data['family_name'];
+                          }
+
+                          if(!empty($data['email'])){
+                              $_SESSION['user_email_address'] = $data['email'];
+                          }
+
+                          if(!empty($data['gender'])){
+                              $_SESSION['user_gender'] = $data['gender'];
+                          }
+                          
+                          if(!empty($data['picture'])){
+                              $_SESSION['user_image'] = $data['picture'];
+                          }
+
+                          echo "<div id='content'>";
+                          include('pages/newData.php');
+                          echo "</div>";
+
+                      }
+                      else{
+                          $_SESSION['registered'] = FALSE;
+
+                          echo "<h3>Non sei un utente registrato, non puoi effettuare operazioni sul sistema.</h3>";
+                          echo "<h3>Contatta l'amministratore per autorizzarti.</h3>";
+                          echo "<a class='btn btn-primary' role='button' href='https://pc169.math.unipr.it:443/logout.php'>Login con Google</a>";
+                          return;
+                      }
+                  }
+              }
+            } else if (!isset($_SESSION['access_token'])) {
+              $google_login_btn = '<a class="btn btn-primary" role="button" href="'.$google_client->createAuthUrl().'">Login con Google</a>';
+              echo $google_login_btn;
+              return;
+            }
+            ?>
+        </div>
         </div>
       </div>
     </div>
@@ -203,6 +209,21 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
         loadPage(page); // Carica il contenuto della pagina
       });
     });
+
+    document.getElementById('catalog').addEventListener('click', eseguiChiamataPHP);
+
+    function eseguiChiamataPHP() {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          var response = xhr.responseText;
+          console.log(response);
+          document.getElementById("content").textContent = response;
+        }
+      };
+      xhr.open('GET', '/restRequests/viewCatalog.php', true);
+      xhr.send();
+    }
 
     // Funzione per caricare il contenuto della pagina
     function loadPage(page) {
@@ -354,10 +375,9 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
     function viewCatalogue() {
       // Crea l'oggetto XMLHttpRequest
       var xhr = new XMLHttpRequest();
-
       var token='<?php echo $_SESSION["access_token"];?>';
       // Definisci il tipo di richiesta e l'URL di destinazione
-      xhr.open("POST", "http://localhost:3000/view", true);
+      xhr.open("POST", "https://pc169.math.unipr.it:3000/view", true);
 
       // Imposta la funzione di callback per gestire la risposta
       xhr.onload = function() {
@@ -366,7 +386,7 @@ if(isset($_GET["code"]) or isset($_SESSION['access_token'])){
               var response = xhr.responseText;
               // Puoi manipolare la risposta qui come desideri
               console.log(response);
-              document.getElementById("res").textContent = response
+              document.getElementById("content").textContent = response;
           } else {
               // Si è verificato un errore durante la richiesta
               console.error("Errore nella richiesta. Codice: " + xhr.status);

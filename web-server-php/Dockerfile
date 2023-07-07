@@ -16,19 +16,19 @@ RUN sed -i 's/; extension=openssl/extension=openssl/' /usr/local/etc/php/php.ini
 RUN sed -i 's/; extension=openssl/extension=openssl/' /usr/local/etc/php/php.ini-development
 
 # Copia i certificati SSL nella directory corretta
-COPY ssl.crt /etc/apache2/ssl.crt
-COPY ssl.key /etc/apache2/ssl.key
+COPY webserver.crt /etc/apache2/webserver.crt
+COPY webserver.key /etc/apache2/webserver.key
 
 COPY ./*.php /var/www/html/
 COPY composer.json /var/www/html/
 # COPY *.html /var/www/html/
 # COPY client_secrets.json /var/www/html/
 COPY /vendor /var/www/html/vendor
+COPY /pages /var/www/html/pages
+COPY menu.js /var/www/html/
+COPY /restRequests /var/www/html/restRequests
 
-#COPY ./*.pem /etc/apache2/ssl/
-#COPY ./000-default.conf /etc/apache2/sites-available/000-default.conf
-#RUN service apache2 restart
-
+EXPOSE 80
 EXPOSE 8080
 # port for ssl 
 EXPOSE 443
