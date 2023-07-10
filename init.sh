@@ -1,3 +1,7 @@
+# In some cases, between one command an another there must be some time to let
+# the system perform extra operations. If the system is too fast, sometimes the
+# build can fail.
+
 # Export Hyperledger Fabric tools
 export PATH=$PATH:${PWD}/bin
 # Add path to the folder with bin files
